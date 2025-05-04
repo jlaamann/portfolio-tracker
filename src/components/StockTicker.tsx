@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import {
     Box,
     Input,
@@ -7,108 +6,154 @@ import {
     VStack,
     Text,
     Heading,
+    Table,
+    Thead,
+    Tbody,
+    Tr,
+    Th,
+    Td,
+    useToast,
 } from '@chakra-ui/react'
 import axios from 'axios'
 import { ALPHA_VANTAGE_API_KEY } from '../API_KEY'
 
 interface StockData {
     symbol: string
-    price: number
-    currency: string
+    price: string
+    change: string
+    changePercent: string
+    open: string
+    high: string
+    low: string
+    volume: string
+    previousClose: string
 }
 
 const StockTicker = () => {
     const [ticker, setTicker] = useState('')
+    const [stockData, setStockData] = useState<StockData | null>(null)
+    const [loading, setLoading] = useState(false)
+    const toast = useToast()
 
-    const { data, isLoading, error, refetch } = useQuery<StockData | null>({
-        queryKey: ['stock', ticker],
-        queryFn: async () => {
-            if (!ticker) return null
-            try {
-                const response = await axios.get(
-                    `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
-                )
-
-                if (response.data['Error Message']) {
-                    throw new Error('Invalid stock symbol')
-                }
-
-                const quote = response.data['Global Quote']
-                if (!quote) {
-                    throw new Error('No data available for this symbol')
-                }
-
-                // Get currency information
-                const companyResponse = await axios.get(
-                    `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
-                )
-                const companyInfo = companyResponse.data
-
-                return {
-                    symbol: quote['01. symbol'],
-                    price: parseFloat(quote['05. price']),
-                    currency: companyInfo.Currency || 'USD',
-                }
-            } catch (err) {
-                console.error('API Error:', err)
-                throw new Error('Failed to fetch stock data. Please check the ticker symbol and try again.')
-            }
-        },
-        enabled: false,
-        retry: 1,
-    })
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
+    const fetchStockData = async () => {
         if (!ticker) {
-            alert('Please enter a stock ticker')
+            toast({
+                title: 'Please enter a ticker symbol',
+                status: 'warning',
+                duration: 2000,
+            })
             return
         }
-        refetch()
-    }
 
-    const formatPrice = (price: number, currency: string) => {
-        const formatter = new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-        })
-        return formatter.format(price)
+        setLoading(true)
+        try {
+            const response = await axios.get(
+                `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
+            )
+
+            if (response.data['Error Message']) {
+                throw new Error(response.data['Error Message'])
+            }
+
+            const quote = response.data['Global Quote']
+            if (!quote) {
+                throw new Error('No data found for this ticker')
+            }
+
+            setStockData({
+                symbol: quote['01. symbol'],
+                price: quote['05. price'],
+                change: quote['09. change'],
+                changePercent: quote['10. change percent'],
+                open: quote['02. open'],
+                high: quote['03. high'],
+                low: quote['04. low'],
+                volume: quote['06. volume'],
+                previousClose: quote['08. previous close'],
+            })
+        } catch (error) {
+            toast({
+                title: 'Error fetching stock data',
+                description: error instanceof Error ? error.message : 'Unknown error occurred',
+                status: 'error',
+                duration: 3000,
+            })
+            setStockData(null)
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
-        <Box w="100%">
-            <form onSubmit={handleSubmit}>
-                <VStack gap={4} align="stretch">
-                    <Box>
-                        <Heading size="sm" mb={2}>Stock Ticker Symbol</Heading>
-                        <Input
-                            placeholder="Enter stock ticker (e.g., AAPL)"
-                            value={ticker}
-                            onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                            size="lg"
-                            autoFocus
-                        />
-                    </Box>
-                    <Button type="submit" colorScheme="blue" size="lg" loading={isLoading}>
-                        Get Stock Info
+        <Box p={5}>
+            <VStack spacing={8} align="stretch">
+                <Heading size="lg">Stock Information</Heading>
+
+                <Box>
+                    <Input
+                        placeholder="Enter ticker symbol (e.g., AAPL)"
+                        value={ticker}
+                        onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                        onKeyPress={(e) => e.key === 'Enter' && fetchStockData()}
+                    />
+                    <Button
+                        mt={2}
+                        colorScheme="blue"
+                        onClick={fetchStockData}
+                        isLoading={loading}
+                        width="full"
+                    >
+                        Get Stock Data
                     </Button>
-                </VStack>
-            </form>
-
-            {error && (
-                <Text color="red.500" mt={4}>
-                    {error.message}
-                </Text>
-            )}
-
-            {data && (
-                <Box p={5} shadow="md" borderWidth="1px" borderRadius="md" mt={8}>
-                    <Heading size="sm" mb={2}>{data.symbol} Price</Heading>
-                    <Text fontSize="2xl" fontWeight="bold">
-                        {formatPrice(data.price, data.currency)}
-                    </Text>
                 </Box>
-            )}
+
+                {stockData && (
+                    <Box overflowX="auto">
+                        <Table variant="simple">
+                            <Thead>
+                                <Tr>
+                                    <Th>Metric</Th>
+                                    <Th>Value</Th>
+                                </Tr>
+                            </Thead>
+                            <Tbody>
+                                <Tr>
+                                    <Td>Current Price</Td>
+                                    <Td>${stockData.price}</Td>
+                                </Tr>
+                                <Tr>
+                                    <Td>Change</Td>
+                                    <Td>
+                                        <Text color={parseFloat(stockData.change) >= 0 ? 'green.500' : 'red.500'}>
+                                            {stockData.change} ({stockData.changePercent})
+                                        </Text>
+                                    </Td>
+                                </Tr>
+                                <Tr>
+                                    <Td>Open</Td>
+                                    <Td>${stockData.open}</Td>
+                                </Tr>
+                                <Tr>
+                                    <Td>High</Td>
+                                    <Td>${stockData.high}</Td>
+                                </Tr>
+                                <Tr>
+                                    <Td>Low</Td>
+                                    <Td>${stockData.low}</Td>
+                                </Tr>
+                                <Tr>
+                                    <Td>Volume</Td>
+                                    <Td>{parseInt(stockData.volume).toLocaleString()}</Td>
+                                </Tr>
+                                <Tr>
+                                    <Td>Previous Close</Td>
+                                    <Td>${stockData.previousClose}</Td>
+                                </Tr>
+                            </Tbody>
+                        </Table>
+                    </Box>
+                )}
+            </VStack>
         </Box>
     )
 }

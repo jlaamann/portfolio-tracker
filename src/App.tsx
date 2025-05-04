@@ -1,19 +1,22 @@
-import { Container, VStack, Heading } from '@chakra-ui/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Box } from '@chakra-ui/react'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import Sidebar from './components/Sidebar'
 import StockTicker from './components/StockTicker'
-
-const queryClient = new QueryClient()
+import Portfolio from './components/Portfolio'
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Container maxW="container.md" py={10}>
-        <VStack gap={8}>
-          <Heading>Stock Information</Heading>
-          <StockTicker />
-        </VStack>
-      </Container>
-    </QueryClientProvider>
+    <Router>
+      <Box display="flex">
+        <Sidebar />
+        <Box ml="200px" p={4} flex="1">
+          <Routes>
+            <Route path="/" element={<StockTicker />} />
+            <Route path="/portfolio" element={<Portfolio />} />
+          </Routes>
+        </Box>
+      </Box>
+    </Router>
   )
 }
 
