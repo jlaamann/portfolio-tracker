@@ -214,12 +214,21 @@ const Portfolio = () => {
         if (!editingPosition) return;
 
         try {
+            const oldPosition = positions.find(p => p.id === editingPosition.id);
+            if (!oldPosition) return;
+
+            // If ticker has changed, delete the old position first
+            if (oldPosition.ticker !== editingPosition.ticker.toUpperCase()) {
+                await deletePosition(oldPosition.id);
+            }
+
+            // Add the new/updated position
             await addPosition({
                 ticker: editingPosition.ticker.toUpperCase(),
                 shares: parseInt(editingPosition.shares),
                 buy_price: parseFloat(editingPosition.buy_price),
-                currency: positions.find(p => p.id === editingPosition.id)?.currency || 'USD',
-            });
+                currency: oldPosition.currency,
+            }, true);
 
             toast({
                 title: 'Position updated',

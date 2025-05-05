@@ -64,12 +64,12 @@ export const updatePosition = async (id: number, position: Partial<PortfolioDB['
 
 type NewPosition = Omit<PortfolioDB['portfolio']['value'], 'id' | 'created_at'>;
 
-export const addPosition = async (position: NewPosition) => {
+export const addPosition = async (position: NewPosition, isUpdate: boolean = false) => {
     const db = await getDB();
     const existingPosition = await getPositionByTicker(position.ticker);
 
-    if (existingPosition) {
-        // Calculate new average price and total shares
+    if (existingPosition && !isUpdate) {
+        // Calculate new average price and total shares for adding to existing position
         const totalShares = existingPosition.shares + position.shares;
         const totalValue = (existingPosition.shares * existingPosition.buy_price) + (position.shares * position.buy_price);
         const averagePrice = Number((totalValue / totalShares).toFixed(2));
@@ -78,6 +78,14 @@ export const addPosition = async (position: NewPosition) => {
         return updatePosition(existingPosition.id, {
             shares: totalShares,
             buy_price: averagePrice,
+        });
+    }
+
+    // Add new position or update existing one
+    if (isUpdate && existingPosition) {
+        return updatePosition(existingPosition.id, {
+            shares: position.shares,
+            buy_price: position.buy_price,
         });
     }
 
