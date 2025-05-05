@@ -38,16 +38,121 @@ interface EditingPosition {
     buy_price: string;
 }
 
-const Portfolio = () => {
-    const [positions, setPositions] = useState<PortfolioPosition[]>([]);
-    const [editingPosition, setEditingPosition] = useState<EditingPosition | null>(null);
-    const [cashValue, setCashValue] = useState(0);
+interface AddPositionFormProps {
+    onSubmit: (data: {
+        ticker: string;
+        shares: number;
+        buy_price: number;
+        currency: string;
+    }) => Promise<void>;
+}
+
+const AddPositionForm = ({ onSubmit }: AddPositionFormProps) => {
     const [formData, setFormData] = useState({
         ticker: '',
         shares: '',
         buy_price: '',
         currency: 'USD',
     });
+
+    const handleFormChange = (field: keyof typeof formData, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await onSubmit({
+                ticker: formData.ticker.toUpperCase(),
+                shares: parseFloat(formData.shares),
+                buy_price: parseFloat(formData.buy_price),
+                currency: formData.currency,
+            });
+
+            setFormData({
+                ticker: '',
+                shares: '',
+                buy_price: '',
+                currency: 'USD',
+            });
+        } catch (error) {
+            console.error('Error submitting form:', error);
+        }
+    };
+
+    return (
+        <Box as="form" onSubmit={handleSubmit} p={{ base: 3, md: 5 }} shadow="md" borderWidth="1px" borderRadius="md">
+            <VStack spacing={4}>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%">
+                    <FormControl isRequired>
+                        <FormLabel>Ticker Symbol</FormLabel>
+                        <Input
+                            value={formData.ticker}
+                            onChange={(e) => handleFormChange('ticker', e.target.value)}
+                            placeholder="e.g., AAPL"
+                        />
+                    </FormControl>
+
+                    <FormControl isRequired>
+                        <FormLabel>Number of Shares</FormLabel>
+                        <NumberInput
+                            value={formData.shares}
+                            onChange={(value) => handleFormChange('shares', value)}
+                            precision={4}
+                        >
+                            <NumberInputField />
+                            <NumberInputStepper>
+                                <NumberIncrementStepper />
+                                <NumberDecrementStepper />
+                            </NumberInputStepper>
+                        </NumberInput>
+                    </FormControl>
+
+                    <FormControl isRequired>
+                        <FormLabel>Average Price</FormLabel>
+                        <NumberInput
+                            value={formData.buy_price}
+                            onChange={(value) => handleFormChange('buy_price', value)}
+                            min={0}
+                            precision={2}
+                        >
+                            <NumberInputField />
+                            <NumberInputStepper>
+                                <NumberIncrementStepper />
+                                <NumberDecrementStepper />
+                            </NumberInputStepper>
+                        </NumberInput>
+                    </FormControl>
+
+                    <FormControl isRequired>
+                        <FormLabel>Currency</FormLabel>
+                        <Select
+                            value={formData.currency}
+                            onChange={(e) => handleFormChange('currency', e.target.value)}
+                        >
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="GBP">GBP</option>
+                            <option value="JPY">JPY</option>
+                        </Select>
+                    </FormControl>
+                </SimpleGrid>
+
+                <Button type="submit" colorScheme="blue" width="full">
+                    Add Position
+                </Button>
+            </VStack>
+        </Box>
+    );
+};
+
+const Portfolio = () => {
+    const [positions, setPositions] = useState<PortfolioPosition[]>([]);
+    const [editingPosition, setEditingPosition] = useState<EditingPosition | null>(null);
+    const [cashValue, setCashValue] = useState(0);
     const toast = useToast();
 
     // Get unique currencies from positions
@@ -92,11 +197,8 @@ const Portfolio = () => {
 
     const handleSaveCash = async (amount: number) => {
         try {
-            // Save the current cash value to the database
             await saveCashPosition(amount);
-            // Reload to ensure consistency
             setCashValue(amount);
-            // await loadCashPosition();
             toast({
                 title: 'Cash position saved',
                 status: 'success',
@@ -116,37 +218,36 @@ const Portfolio = () => {
         setCashValue(value);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleAddPosition = async (data: {
+        ticker: string;
+        shares: number;
+        buy_price: number;
+        currency: string;
+    }) => {
         try {
-            await addPosition({
-                ticker: formData.ticker.toUpperCase(),
-                shares: parseFloat(formData.shares),
-                buy_price: parseFloat(formData.buy_price),
-                currency: formData.currency,
-            });
-
+            await addPosition(data);
             toast({
-                title: 'Position updated',
+                title: 'Position added',
                 status: 'success',
                 duration: 2000,
             });
-
-            setFormData({
-                ticker: '',
-                shares: '',
-                buy_price: '',
-                currency: 'USD',
-            });
-
             loadPositions();
         } catch (error) {
             toast({
-                title: 'Error updating position',
+                title: 'Error adding position',
                 status: 'error',
                 duration: 2000,
             });
         }
+    };
+
+    const handleEdit = (position: PortfolioPosition) => {
+        setEditingPosition({
+            id: position.id,
+            ticker: position.ticker,
+            shares: position.shares.toString(),
+            buy_price: position.buy_price.toString(),
+        });
     };
 
     const handleDelete = async (id: number) => {
@@ -210,15 +311,6 @@ const Portfolio = () => {
         updateMarketValues();
     }, [positions.length]);
 
-    const handleEdit = (position: PortfolioPosition) => {
-        setEditingPosition({
-            id: position.id,
-            ticker: position.ticker,
-            shares: position.shares.toString(),
-            buy_price: position.buy_price.toString(),
-        });
-    };
-
     const handleSave = async () => {
         if (!editingPosition) return;
 
@@ -272,68 +364,7 @@ const Portfolio = () => {
                         onSaveCash={handleSaveCash}
                     />
 
-                    <Box as="form" onSubmit={handleSubmit} p={{ base: 3, md: 5 }} shadow="md" borderWidth="1px" borderRadius="md">
-                        <VStack spacing={4}>
-                            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%">
-                                <FormControl isRequired>
-                                    <FormLabel>Ticker Symbol</FormLabel>
-                                    <Input
-                                        value={formData.ticker}
-                                        onChange={(e) => setFormData({ ...formData, ticker: e.target.value })}
-                                        placeholder="e.g., AAPL"
-                                    />
-                                </FormControl>
-
-                                <FormControl isRequired>
-                                    <FormLabel>Number of Shares</FormLabel>
-                                    <NumberInput
-                                        value={formData.shares}
-                                        onChange={(value) => setFormData({ ...formData, shares: value })}
-                                        precision={4}
-                                    >
-                                        <NumberInputField />
-                                        <NumberInputStepper>
-                                            <NumberIncrementStepper />
-                                            <NumberDecrementStepper />
-                                        </NumberInputStepper>
-                                    </NumberInput>
-                                </FormControl>
-
-                                <FormControl isRequired>
-                                    <FormLabel>Average Price</FormLabel>
-                                    <NumberInput
-                                        value={formData.buy_price}
-                                        onChange={(value) => setFormData({ ...formData, buy_price: value })}
-                                        min={0}
-                                        precision={2}
-                                    >
-                                        <NumberInputField />
-                                        <NumberInputStepper>
-                                            <NumberIncrementStepper />
-                                            <NumberDecrementStepper />
-                                        </NumberInputStepper>
-                                    </NumberInput>
-                                </FormControl>
-
-                                <FormControl isRequired>
-                                    <FormLabel>Currency</FormLabel>
-                                    <Select
-                                        value={formData.currency}
-                                        onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                                    >
-                                        <option value="USD">USD</option>
-                                        <option value="EUR">EUR</option>
-                                        <option value="GBP">GBP</option>
-                                        <option value="JPY">JPY</option>
-                                    </Select>
-                                </FormControl>
-                            </SimpleGrid>
-
-                            <Button type="submit" colorScheme="blue" width="full">
-                                Add Position
-                            </Button>
-                        </VStack>
-                    </Box>
+                    <AddPositionForm onSubmit={handleAddPosition} />
 
                     <PortfolioTable
                         positions={positions}
