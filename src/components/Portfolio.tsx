@@ -21,6 +21,9 @@ import {
     NumberIncrementStepper,
     NumberDecrementStepper,
     Select,
+    SimpleGrid,
+    useBreakpointValue,
+    Text,
 } from '@chakra-ui/react';
 import { DeleteIcon } from '@chakra-ui/icons';
 import { addPosition, getAllPositions, deletePosition } from '../db/setup';
@@ -157,64 +160,66 @@ const Portfolio = () => {
     }, [positions.length]);
 
     return (
-        <Box p={5}>
+        <Box p={{ base: 2, md: 5 }}>
             <VStack spacing={8} align="stretch">
-                <Heading size="lg">Portfolio Management</Heading>
+                <Heading size="lg" textAlign="center">Portfolio Management</Heading>
 
-                <Box as="form" onSubmit={handleSubmit} p={5} shadow="md" borderWidth="1px" borderRadius="md">
+                <Box as="form" onSubmit={handleSubmit} p={{ base: 3, md: 5 }} shadow="md" borderWidth="1px" borderRadius="md">
                     <VStack spacing={4}>
-                        <FormControl isRequired>
-                            <FormLabel>Ticker Symbol</FormLabel>
-                            <Input
-                                value={formData.ticker}
-                                onChange={(e) => setFormData({ ...formData, ticker: e.target.value })}
-                                placeholder="e.g., AAPL"
-                            />
-                        </FormControl>
+                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%">
+                            <FormControl isRequired>
+                                <FormLabel>Ticker Symbol</FormLabel>
+                                <Input
+                                    value={formData.ticker}
+                                    onChange={(e) => setFormData({ ...formData, ticker: e.target.value })}
+                                    placeholder="e.g., AAPL"
+                                />
+                            </FormControl>
 
-                        <FormControl isRequired>
-                            <FormLabel>Number of Shares</FormLabel>
-                            <NumberInput
-                                value={formData.shares}
-                                onChange={(value) => setFormData({ ...formData, shares: value })}
-                                min={1}
-                            >
-                                <NumberInputField />
-                                <NumberInputStepper>
-                                    <NumberIncrementStepper />
-                                    <NumberDecrementStepper />
-                                </NumberInputStepper>
-                            </NumberInput>
-                        </FormControl>
+                            <FormControl isRequired>
+                                <FormLabel>Number of Shares</FormLabel>
+                                <NumberInput
+                                    value={formData.shares}
+                                    onChange={(value) => setFormData({ ...formData, shares: value })}
+                                    min={1}
+                                >
+                                    <NumberInputField />
+                                    <NumberInputStepper>
+                                        <NumberIncrementStepper />
+                                        <NumberDecrementStepper />
+                                    </NumberInputStepper>
+                                </NumberInput>
+                            </FormControl>
 
-                        <FormControl isRequired>
-                            <FormLabel>Average Price</FormLabel>
-                            <NumberInput
-                                value={formData.buy_price}
-                                onChange={(value) => setFormData({ ...formData, buy_price: value })}
-                                min={0}
-                                precision={2}
-                            >
-                                <NumberInputField />
-                                <NumberInputStepper>
-                                    <NumberIncrementStepper />
-                                    <NumberDecrementStepper />
-                                </NumberInputStepper>
-                            </NumberInput>
-                        </FormControl>
+                            <FormControl isRequired>
+                                <FormLabel>Average Price</FormLabel>
+                                <NumberInput
+                                    value={formData.buy_price}
+                                    onChange={(value) => setFormData({ ...formData, buy_price: value })}
+                                    min={0}
+                                    precision={2}
+                                >
+                                    <NumberInputField />
+                                    <NumberInputStepper>
+                                        <NumberIncrementStepper />
+                                        <NumberDecrementStepper />
+                                    </NumberInputStepper>
+                                </NumberInput>
+                            </FormControl>
 
-                        <FormControl isRequired>
-                            <FormLabel>Currency</FormLabel>
-                            <Select
-                                value={formData.currency}
-                                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                            >
-                                <option value="USD">USD</option>
-                                <option value="EUR">EUR</option>
-                                <option value="GBP">GBP</option>
-                                <option value="JPY">JPY</option>
-                            </Select>
-                        </FormControl>
+                            <FormControl isRequired>
+                                <FormLabel>Currency</FormLabel>
+                                <Select
+                                    value={formData.currency}
+                                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                                >
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="GBP">GBP</option>
+                                    <option value="JPY">JPY</option>
+                                </Select>
+                            </FormControl>
+                        </SimpleGrid>
 
                         <Button type="submit" colorScheme="blue" width="full">
                             Add Position
@@ -222,15 +227,15 @@ const Portfolio = () => {
                     </VStack>
                 </Box>
 
-                <Box overflowX="auto">
-                    <Table variant="simple">
+                <Box overflowX="auto" width="100%">
+                    <Table variant="simple" size={useBreakpointValue({ base: "sm", md: "md" })}>
                         <Thead>
                             <Tr>
                                 <Th>Ticker</Th>
                                 <Th>Shares</Th>
-                                <Th>Average Price</Th>
+                                <Th>Avg Price</Th>
                                 <Th>Currency</Th>
-                                <Th>Market Value (EUR)</Th>
+                                <Th>Market Value</Th>
                                 <Th>Actions</Th>
                             </Tr>
                         </Thead>

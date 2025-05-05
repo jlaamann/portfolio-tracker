@@ -1,10 +1,65 @@
-import { Box, VStack, Button, useColorModeValue } from '@chakra-ui/react';
+import { Box, VStack, Button, useColorModeValue, IconButton, useDisclosure, Drawer, DrawerOverlay, DrawerContent, DrawerCloseButton, DrawerHeader, DrawerBody } from '@chakra-ui/react';
 import { Link, useLocation } from 'react-router-dom';
+import { HamburgerIcon } from '@chakra-ui/icons';
+import { useBreakpointValue } from '@chakra-ui/react';
 
 const Sidebar = () => {
     const location = useLocation();
     const bgColor = useColorModeValue('gray.100', 'gray.700');
     const activeBgColor = useColorModeValue('blue.200', 'blue.600');
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const isMobile = useBreakpointValue({ base: true, md: false });
+
+    const SidebarContent = () => (
+        <VStack spacing={4} align="stretch">
+            <Button
+                as={Link}
+                to="/"
+                colorScheme={location.pathname === '/' ? 'blue' : 'gray'}
+                variant={location.pathname === '/' ? 'solid' : 'ghost'}
+                justifyContent="flex-start"
+                onClick={isMobile ? onClose : undefined}
+            >
+                Stock Price Lookup
+            </Button>
+            <Button
+                as={Link}
+                to="/portfolio"
+                colorScheme={location.pathname === '/portfolio' ? 'blue' : 'gray'}
+                variant={location.pathname === '/portfolio' ? 'solid' : 'ghost'}
+                justifyContent="flex-start"
+                onClick={isMobile ? onClose : undefined}
+            >
+                Portfolio
+            </Button>
+        </VStack>
+    );
+
+    if (isMobile) {
+        return (
+            <>
+                <IconButton
+                    aria-label="Open menu"
+                    icon={<HamburgerIcon />}
+                    position="fixed"
+                    top={4}
+                    left={4}
+                    zIndex={1000}
+                    onClick={onOpen}
+                />
+                <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
+                    <DrawerOverlay />
+                    <DrawerContent>
+                        <DrawerCloseButton />
+                        <DrawerHeader>Menu</DrawerHeader>
+                        <DrawerBody>
+                            <SidebarContent />
+                        </DrawerBody>
+                    </DrawerContent>
+                </Drawer>
+            </>
+        );
+    }
 
     return (
         <Box
@@ -16,26 +71,7 @@ const Sidebar = () => {
             left={0}
             top={0}
         >
-            <VStack spacing={4} align="stretch">
-                <Button
-                    as={Link}
-                    to="/"
-                    colorScheme={location.pathname === '/' ? 'blue' : 'gray'}
-                    variant={location.pathname === '/' ? 'solid' : 'ghost'}
-                    justifyContent="flex-start"
-                >
-                    Stock Price
-                </Button>
-                <Button
-                    as={Link}
-                    to="/portfolio"
-                    colorScheme={location.pathname === '/portfolio' ? 'blue' : 'gray'}
-                    variant={location.pathname === '/portfolio' ? 'solid' : 'ghost'}
-                    justifyContent="flex-start"
-                >
-                    Portfolio
-                </Button>
-            </VStack>
+            <SidebarContent />
         </Box>
     );
 };

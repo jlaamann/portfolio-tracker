@@ -4,7 +4,6 @@ import {
     Input,
     Button,
     VStack,
-    Text,
     Heading,
     Table,
     Thead,
@@ -13,6 +12,8 @@ import {
     Th,
     Td,
     useToast,
+    SimpleGrid,
+    useBreakpointValue,
 } from '@chakra-ui/react'
 import axios from 'axios'
 
@@ -52,7 +53,7 @@ const StockTicker = () => {
 
             setStockData({
                 symbol: ticker,
-                price: regularMarketPrice.toFixed(2),
+                price: regularMarketPrice.toFixed(2)
             })
         } catch (error) {
             toast({
@@ -68,9 +69,9 @@ const StockTicker = () => {
     }
 
     return (
-        <Box p={5}>
+        <Box p={{ base: 2, md: 5 }}>
             <VStack spacing={8} align="stretch">
-                <Heading size="lg">Stock Information</Heading>
+                <Heading size="lg" textAlign="center">Stock Information</Heading>
 
                 <Box>
                     <Input
@@ -91,8 +92,8 @@ const StockTicker = () => {
                 </Box>
 
                 {stockData && (
-                    <Box overflowX="auto">
-                        <Table variant="simple">
+                    <Box overflowX="auto" width="100%">
+                        <Table variant="simple" size={useBreakpointValue({ base: "sm", md: "md" })}>
                             <Thead>
                                 <Tr>
                                     <Th>Metric</Th>
@@ -100,10 +101,12 @@ const StockTicker = () => {
                                 </Tr>
                             </Thead>
                             <Tbody>
-                                <Tr>
-                                    <Td>Current Price</Td>
-                                    <Td>${stockData.price}</Td>
-                                </Tr>
+                                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%">
+                                    <Tr>
+                                        <Td>Current Price</Td>
+                                        <Td>${stockData.price}</Td>
+                                    </Tr>
+                                </SimpleGrid>
                             </Tbody>
                         </Table>
                     </Box>
