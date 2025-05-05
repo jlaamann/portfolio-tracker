@@ -15,10 +15,12 @@ import {
     NumberDecrementStepper,
     HStack,
     useBreakpointValue,
+    Text,
+    Center,
 } from '@chakra-ui/react';
 import { DeleteIcon, EditIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
-import axios from 'axios';
 import { useState, useEffect } from 'react';
+import { useExchangeRates } from '../contexts/ExchangeRateContext';
 
 interface PortfolioPosition {
     id: number;
@@ -63,6 +65,8 @@ export const PortfolioTable = ({
     onEditingPositionChange,
 }: PortfolioTableProps) => {
     const [positionReturns, setPositionReturns] = useState<Record<number, PositionReturn>>({});
+    const { exchangeRates, isLoading, error } = useExchangeRates();
+    const tableSize = useBreakpointValue({ base: "sm", md: "md" });
 
     const getPriceString = (price: number, currency: string) => {
         return price.toLocaleString('en-US', { style: 'currency', currency: currency ?? "EUR" });
@@ -73,7 +77,7 @@ export const PortfolioTable = ({
         return ((position.market_value * position.shares) / totalPortfolioValue) * 100;
     };
 
-    const getPositionReturn = async (position: PortfolioPosition) => {
+    const getPositionReturn = (position: PortfolioPosition) => {
         if (position.market_value === null || position.market_value === undefined) return { absolute: 0, percentage: 0 };
 
         const costBasis = position.shares * position.buy_price;
@@ -81,16 +85,8 @@ export const PortfolioTable = ({
 
         // Convert market value to the same currency as buy price if needed
         if (position.currency !== 'EUR') {
-            try {
-                const response = await axios.get(
-                    `http://localhost:3001/api/currency/EUR/${position.currency}`
-                );
-                const exchangeRate = response.data.chart.result[0].meta.regularMarketPrice;
-                marketValue = marketValue * exchangeRate;
-            } catch (error) {
-                console.error('Error fetching exchange rate:', error);
-                return { absolute: 0, percentage: 0 };
-            }
+            const exchangeRate = exchangeRates[position.currency] || 1;
+            marketValue = marketValue * exchangeRate;
         }
 
         const absoluteReturn = marketValue - costBasis;
@@ -99,22 +95,34 @@ export const PortfolioTable = ({
     };
 
     useEffect(() => {
-        const updateReturns = async () => {
-            const newReturns: Record<number, PositionReturn> = {};
-            for (const position of positions) {
-                if (position.market_value !== null && position.market_value !== undefined) {
-                    newReturns[position.id] = await getPositionReturn(position);
-                }
+        const newReturns: Record<number, PositionReturn> = {};
+        for (const position of positions) {
+            if (position.market_value !== null && position.market_value !== undefined) {
+                newReturns[position.id] = getPositionReturn(position);
             }
-            setPositionReturns(newReturns);
-        };
+        }
+        setPositionReturns(newReturns);
+    }, [positions, exchangeRates]);
 
-        updateReturns();
-    }, [positions]);
+    const renderContent = () => {
+        if (isLoading) {
+            return (
+                <Center p={4}>
+                    <Text>Loading exchange rates...</Text>
+                </Center>
+            );
+        }
 
-    return (
-        <Box overflowX="auto" width="100%">
-            <Table variant="simple" size={useBreakpointValue({ base: "sm", md: "md" })}>
+        if (error) {
+            return (
+                <Center p={4}>
+                    <Text color="red.500">Error loading exchange rates: {error}</Text>
+                </Center>
+            );
+        }
+
+        return (
+            <Table variant="simple" size={tableSize}>
                 <Thead>
                     <Tr>
                         <Th>Ticker</Th>
@@ -255,6 +263,12 @@ export const PortfolioTable = ({
                     ))}
                 </Tbody>
             </Table>
+        );
+    };
+
+    return (
+        <Box overflowX="auto" width="100%">
+            {renderContent()}
         </Box>
     );
 }; 

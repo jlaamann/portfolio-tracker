@@ -20,6 +20,7 @@ import { addPosition, getAllPositions, deletePosition, saveCashPosition, getCash
 import axios from 'axios';
 import { PortfolioSummary } from './PortfolioSummary';
 import { PortfolioTable } from './PortfolioTable';
+import { ExchangeRateProvider } from '../contexts/ExchangeRateContext';
 
 interface PortfolioPosition {
     id: number;
@@ -49,13 +50,14 @@ const Portfolio = () => {
     });
     const toast = useToast();
 
+    // Get unique currencies from positions
+    const currencies = [...new Set(positions.map(pos => pos.currency))];
+
     // Calculate total portfolio value
     const totalPortfolioValue = positions.reduce((sum, pos) => {
         if (pos.market_value === null || pos.market_value === undefined) return sum;
         return sum + (pos.market_value * pos.shares);
     }, 0) + cashValue;
-
-
 
     const loadCashPosition = async () => {
         try {
@@ -252,91 +254,93 @@ const Portfolio = () => {
     };
 
     return (
-        <Box p={{ base: 2, md: 5 }}>
-            <VStack spacing={8} align="stretch">
-                <Heading size="lg" textAlign="center">My Portfolio</Heading>
-                <PortfolioSummary
-                    positions={positions}
-                    cashValue={cashValue}
-                    onCashValueChange={setCashValue}
-                    onSaveCash={handleSaveCash}
-                />
+        <ExchangeRateProvider currencies={currencies}>
+            <Box p={{ base: 2, md: 5 }}>
+                <VStack spacing={8} align="stretch">
+                    <Heading size="lg" textAlign="center">My Portfolio</Heading>
+                    <PortfolioSummary
+                        positions={positions}
+                        cashValue={cashValue}
+                        onCashValueChange={setCashValue}
+                        onSaveCash={handleSaveCash}
+                    />
 
-                <Box as="form" onSubmit={handleSubmit} p={{ base: 3, md: 5 }} shadow="md" borderWidth="1px" borderRadius="md">
-                    <VStack spacing={4}>
-                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%">
-                            <FormControl isRequired>
-                                <FormLabel>Ticker Symbol</FormLabel>
-                                <Input
-                                    value={formData.ticker}
-                                    onChange={(e) => setFormData({ ...formData, ticker: e.target.value })}
-                                    placeholder="e.g., AAPL"
-                                />
-                            </FormControl>
+                    <Box as="form" onSubmit={handleSubmit} p={{ base: 3, md: 5 }} shadow="md" borderWidth="1px" borderRadius="md">
+                        <VStack spacing={4}>
+                            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%">
+                                <FormControl isRequired>
+                                    <FormLabel>Ticker Symbol</FormLabel>
+                                    <Input
+                                        value={formData.ticker}
+                                        onChange={(e) => setFormData({ ...formData, ticker: e.target.value })}
+                                        placeholder="e.g., AAPL"
+                                    />
+                                </FormControl>
 
-                            <FormControl isRequired>
-                                <FormLabel>Number of Shares</FormLabel>
-                                <NumberInput
-                                    value={formData.shares}
-                                    onChange={(value) => setFormData({ ...formData, shares: value })}
-                                    precision={4}
-                                >
-                                    <NumberInputField />
-                                    <NumberInputStepper>
-                                        <NumberIncrementStepper />
-                                        <NumberDecrementStepper />
-                                    </NumberInputStepper>
-                                </NumberInput>
-                            </FormControl>
+                                <FormControl isRequired>
+                                    <FormLabel>Number of Shares</FormLabel>
+                                    <NumberInput
+                                        value={formData.shares}
+                                        onChange={(value) => setFormData({ ...formData, shares: value })}
+                                        precision={4}
+                                    >
+                                        <NumberInputField />
+                                        <NumberInputStepper>
+                                            <NumberIncrementStepper />
+                                            <NumberDecrementStepper />
+                                        </NumberInputStepper>
+                                    </NumberInput>
+                                </FormControl>
 
-                            <FormControl isRequired>
-                                <FormLabel>Average Price</FormLabel>
-                                <NumberInput
-                                    value={formData.buy_price}
-                                    onChange={(value) => setFormData({ ...formData, buy_price: value })}
-                                    min={0}
-                                    precision={2}
-                                >
-                                    <NumberInputField />
-                                    <NumberInputStepper>
-                                        <NumberIncrementStepper />
-                                        <NumberDecrementStepper />
-                                    </NumberInputStepper>
-                                </NumberInput>
-                            </FormControl>
+                                <FormControl isRequired>
+                                    <FormLabel>Average Price</FormLabel>
+                                    <NumberInput
+                                        value={formData.buy_price}
+                                        onChange={(value) => setFormData({ ...formData, buy_price: value })}
+                                        min={0}
+                                        precision={2}
+                                    >
+                                        <NumberInputField />
+                                        <NumberInputStepper>
+                                            <NumberIncrementStepper />
+                                            <NumberDecrementStepper />
+                                        </NumberInputStepper>
+                                    </NumberInput>
+                                </FormControl>
 
-                            <FormControl isRequired>
-                                <FormLabel>Currency</FormLabel>
-                                <Select
-                                    value={formData.currency}
-                                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                                >
-                                    <option value="USD">USD</option>
-                                    <option value="EUR">EUR</option>
-                                    <option value="GBP">GBP</option>
-                                    <option value="JPY">JPY</option>
-                                </Select>
-                            </FormControl>
-                        </SimpleGrid>
+                                <FormControl isRequired>
+                                    <FormLabel>Currency</FormLabel>
+                                    <Select
+                                        value={formData.currency}
+                                        onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                                    >
+                                        <option value="USD">USD</option>
+                                        <option value="EUR">EUR</option>
+                                        <option value="GBP">GBP</option>
+                                        <option value="JPY">JPY</option>
+                                    </Select>
+                                </FormControl>
+                            </SimpleGrid>
 
-                        <Button type="submit" colorScheme="blue" width="full">
-                            Add Position
-                        </Button>
-                    </VStack>
-                </Box>
+                            <Button type="submit" colorScheme="blue" width="full">
+                                Add Position
+                            </Button>
+                        </VStack>
+                    </Box>
 
-                <PortfolioTable
-                    positions={positions}
-                    editingPosition={editingPosition}
-                    totalPortfolioValue={totalPortfolioValue}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onSave={handleSave}
-                    onCancel={handleCancel}
-                    onEditingPositionChange={setEditingPosition}
-                />
-            </VStack>
-        </Box>
+                    <PortfolioTable
+                        positions={positions}
+                        editingPosition={editingPosition}
+                        totalPortfolioValue={totalPortfolioValue}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onSave={handleSave}
+                        onCancel={handleCancel}
+                        onEditingPositionChange={setEditingPosition}
+                    />
+                </VStack>
+            </Box>
+        </ExchangeRateProvider>
     );
 };
 

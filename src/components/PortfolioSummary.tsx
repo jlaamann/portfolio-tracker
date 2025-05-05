@@ -17,7 +17,7 @@ import {
 } from '@chakra-ui/react';
 import { CheckIcon } from '@chakra-ui/icons';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useExchangeRates } from '../contexts/ExchangeRateContext';
 
 interface PortfolioPosition {
     id: number;
@@ -38,39 +38,12 @@ interface PortfolioSummaryProps {
 export const PortfolioSummary = ({ positions, cashValue, onCashValueChange, onSaveCash }: PortfolioSummaryProps) => {
     const [localCashValue, setLocalCashValue] = useState(cashValue);
     const [isCashModified, setIsCashModified] = useState(false);
-    const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
+    const { exchangeRates, isLoading, error } = useExchangeRates();
 
     useEffect(() => {
         setLocalCashValue(cashValue);
         setIsCashModified(false);
     }, [cashValue]);
-
-    // Fetch exchange rates for all currencies
-    useEffect(() => {
-        const fetchExchangeRates = async () => {
-            const currencies = [...new Set(positions.map(pos => pos.currency))];
-            const rates: Record<string, number> = {};
-
-            for (const currency of currencies) {
-                if (currency === 'EUR') {
-                    rates[currency] = 1;
-                    continue;
-                }
-                try {
-                    const response = await axios.get(
-                        `http://localhost:3001/api/currency/${currency}/EUR`
-                    );
-                    rates[currency] = response.data.chart.result[0].meta.regularMarketPrice;
-                } catch (error) {
-                    console.error(`Error fetching exchange rate for ${currency}:`, error);
-                    rates[currency] = 1; // Fallback to 1 if fetch fails
-                }
-            }
-            setExchangeRates(rates);
-        };
-
-        fetchExchangeRates();
-    }, [positions]);
 
     const handleCashChange = (value: string) => {
         const newValue = Number(value);
@@ -102,6 +75,14 @@ export const PortfolioSummary = ({ positions, cashValue, onCashValueChange, onSa
     const totalValue = stockValue + localCashValue;
     const profitLoss = stockValue - totalCost;
     const profitLossPercentage = (profitLoss / totalCost) * 100;
+
+    if (isLoading) {
+        return <div>Loading exchange rates...</div>;
+    }
+
+    if (error) {
+        return <div>Error loading exchange rates: {error}</div>;
+    }
 
     return (
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%" mb={4}>
