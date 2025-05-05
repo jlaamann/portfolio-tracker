@@ -28,6 +28,20 @@ const Sidebar = () => {
             </Button>
             <Button
                 as={Link}
+                to="/historical"
+                colorScheme={location.pathname === '/historical' ? 'blue' : 'gray'}
+                variant={location.pathname === '/historical' ? 'solid' : 'ghost'}
+                justifyContent="flex-start"
+                onClick={isMobile ? onClose : undefined}
+                _hover={{
+                    bg: location.pathname === '/historical' ? 'blue.400' : undefined,
+                    color: location.pathname === '/historical' ? 'white' : undefined
+                }}
+            >
+                Historical Price Lookup
+            </Button>
+            <Button
+                as={Link}
                 to="/portfolio"
                 colorScheme={location.pathname === '/portfolio' ? 'blue' : 'gray'}
                 variant={location.pathname === '/portfolio' ? 'solid' : 'ghost'}

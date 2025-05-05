@@ -2,6 +2,7 @@ import { Box, useBreakpointValue, ChakraProvider, ColorModeScript } from '@chakr
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import StockTicker from './components/StockTicker'
+import HistoricalTicker from './components/HistoricalTicker'
 import Portfolio from './components/Portfolio'
 import theme from './theme'
 
@@ -22,6 +23,7 @@ function App() {
           >
             <Routes>
               <Route path="/" element={<StockTicker />} />
+              <Route path="/historical" element={<HistoricalTicker />} />
               <Route path="/portfolio" element={<Portfolio />} />
             </Routes>
           </Box>
