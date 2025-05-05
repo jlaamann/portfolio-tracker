@@ -23,7 +23,6 @@ import {
     Select,
     SimpleGrid,
     useBreakpointValue,
-    Text,
 } from '@chakra-ui/react';
 import { DeleteIcon } from '@chakra-ui/icons';
 import { addPosition, getAllPositions, deletePosition } from '../db/setup';

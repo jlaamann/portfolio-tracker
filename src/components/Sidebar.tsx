@@ -1,6 +1,6 @@
-import { Box, VStack, Button, useColorModeValue, IconButton, useDisclosure, Drawer, DrawerOverlay, DrawerContent, DrawerCloseButton, DrawerHeader, DrawerBody } from '@chakra-ui/react';
+import { Box, VStack, Button, useColorModeValue, IconButton, useDisclosure, Drawer, DrawerOverlay, DrawerContent, DrawerCloseButton, DrawerHeader, DrawerBody, useColorMode, Divider } from '@chakra-ui/react';
 import { Link, useLocation } from 'react-router-dom';
-import { HamburgerIcon } from '@chakra-ui/icons';
+import { HamburgerIcon, MoonIcon, SunIcon } from '@chakra-ui/icons';
 import { useBreakpointValue } from '@chakra-ui/react';
 
 const Sidebar = () => {
@@ -8,6 +8,7 @@ const Sidebar = () => {
     const bgColor = useColorModeValue('gray.100', 'gray.700');
     const { isOpen, onOpen, onClose } = useDisclosure();
     const isMobile = useBreakpointValue({ base: true, md: false });
+    const { colorMode, toggleColorMode } = useColorMode();
 
     const SidebarContent = () => (
         <VStack spacing={4} align="stretch">
@@ -38,6 +39,15 @@ const Sidebar = () => {
                 }}
             >
                 Portfolio
+            </Button>
+            <Divider my={2} />
+            <Button
+                leftIcon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+                onClick={toggleColorMode}
+                variant="ghost"
+                justifyContent="flex-start"
+            >
+                {colorMode === 'light' ? 'Dark Mode' : 'Light Mode'}
             </Button>
         </VStack>
     );

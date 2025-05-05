@@ -12,7 +12,6 @@ import {
     Th,
     Td,
     useToast,
-    SimpleGrid,
     useBreakpointValue,
 } from '@chakra-ui/react'
 import axios from 'axios'
@@ -20,6 +19,7 @@ import axios from 'axios'
 interface StockData {
     symbol: string
     price: string
+    currency: string
 }
 
 const StockTicker = () => {
@@ -27,6 +27,12 @@ const StockTicker = () => {
     const [stockData, setStockData] = useState<StockData | null>(null)
     const [loading, setLoading] = useState(false)
     const toast = useToast()
+    const tableSize = useBreakpointValue({ base: "sm", md: "md" })
+
+    const getPriceString = (price: string, currency: string) => {
+        const numericPrice = parseFloat(price);
+        return numericPrice.toLocaleString('en-US', { style: 'currency', currency: currency ?? "EUR" });
+    }
 
     const fetchStockData = async () => {
         if (!ticker) {
@@ -53,7 +59,8 @@ const StockTicker = () => {
 
             setStockData({
                 symbol: ticker,
-                price: regularMarketPrice.toFixed(2)
+                price: regularMarketPrice.toFixed(2),
+                currency: quote.currency
             })
         } catch (error) {
             toast({
@@ -93,7 +100,7 @@ const StockTicker = () => {
 
                 {stockData && (
                     <Box overflowX="auto" width="100%">
-                        <Table variant="simple" size={useBreakpointValue({ base: "sm", md: "md" })}>
+                        <Table variant="simple" size={tableSize}>
                             <Thead>
                                 <Tr>
                                     <Th>Metric</Th>
@@ -101,12 +108,10 @@ const StockTicker = () => {
                                 </Tr>
                             </Thead>
                             <Tbody>
-                                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%">
-                                    <Tr>
-                                        <Td>Current Price</Td>
-                                        <Td>${stockData.price}</Td>
-                                    </Tr>
-                                </SimpleGrid>
+                                <Tr>
+                                    <Td>Current Price</Td>
+                                    <Td>{getPriceString(stockData.price, stockData.currency)}</Td>
+                                </Tr>
                             </Tbody>
                         </Table>
                     </Box>
