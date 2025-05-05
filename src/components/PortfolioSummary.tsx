@@ -48,13 +48,15 @@ export const PortfolioSummary = ({ positions, cashValue, onCashValueChange, onSa
     const handleCashChange = (value: string) => {
         const newValue = Number(value);
         setLocalCashValue(newValue);
-        onCashValueChange(newValue);
         setIsCashModified(true);
     };
 
     const handleSave = async () => {
         try {
+            // First save to database
             await onSaveCash();
+            // Then update parent state
+            onCashValueChange(localCashValue);
             setIsCashModified(false);
         } catch (error) {
             console.error('Failed to save cash position:', error);
