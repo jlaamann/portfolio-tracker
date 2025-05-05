@@ -16,6 +16,7 @@ import {
     IconButton,
 } from '@chakra-ui/react';
 import { CheckIcon } from '@chakra-ui/icons';
+import { useState, useEffect } from 'react';
 
 interface PortfolioPosition {
     id: number;
@@ -30,16 +31,40 @@ interface PortfolioSummaryProps {
     positions: PortfolioPosition[];
     cashValue: number;
     onCashValueChange: (value: number) => void;
-    onSaveCash: () => void;
+    onSaveCash: () => Promise<void>;
 }
 
 export const PortfolioSummary = ({ positions, cashValue, onCashValueChange, onSaveCash }: PortfolioSummaryProps) => {
+    const [localCashValue, setLocalCashValue] = useState(cashValue);
+    const [isCashModified, setIsCashModified] = useState(false);
+
+    useEffect(() => {
+        setLocalCashValue(cashValue);
+        setIsCashModified(false);
+    }, [cashValue]);
+
+    const handleCashChange = (value: string) => {
+        const newValue = Number(value);
+        setLocalCashValue(newValue);
+        onCashValueChange(newValue);
+        setIsCashModified(true);
+    };
+
+    const handleSave = async () => {
+        try {
+            await onSaveCash();
+            setIsCashModified(false);
+        } catch (error) {
+            console.error('Failed to save cash position:', error);
+        }
+    };
+
     const totalCost = positions.reduce((sum, pos) => sum + (pos.buy_price * pos.shares), 0);
     const stockValue = positions.reduce((sum, pos) => {
         if (pos.market_value === null || pos.market_value === undefined) return sum;
         return sum + (pos.market_value * pos.shares);
     }, 0);
-    const totalValue = stockValue + cashValue;
+    const totalValue = stockValue + localCashValue;
     const profitLoss = stockValue - totalCost;
     const profitLossPercentage = (profitLoss / totalCost) * 100;
 
@@ -52,8 +77,8 @@ export const PortfolioSummary = ({ positions, cashValue, onCashValueChange, onSa
                     <FormLabel fontSize="sm">Cash Position</FormLabel>
                     <HStack>
                         <NumberInput
-                            value={cashValue}
-                            onChange={(value) => onCashValueChange(Number(value))}
+                            value={localCashValue}
+                            onChange={handleCashChange}
                             min={0}
                             precision={2}
                             size="sm"
@@ -65,13 +90,15 @@ export const PortfolioSummary = ({ positions, cashValue, onCashValueChange, onSa
                                 <NumberDecrementStepper />
                             </NumberInputStepper>
                         </NumberInput>
-                        <IconButton
-                            aria-label="Save cash position"
-                            icon={<CheckIcon />}
-                            colorScheme="green"
-                            size="sm"
-                            onClick={onSaveCash}
-                        />
+                        {isCashModified && (
+                            <IconButton
+                                aria-label="Save cash position"
+                                icon={<CheckIcon />}
+                                colorScheme="green"
+                                size="sm"
+                                onClick={handleSave}
+                            />
+                        )}
                     </HStack>
                 </FormControl>
             </Stat>

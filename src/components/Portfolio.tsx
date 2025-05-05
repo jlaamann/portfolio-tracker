@@ -91,6 +91,7 @@ const Portfolio = () => {
     const handleSaveCash = async () => {
         try {
             await saveCashPosition(cashValue);
+            await loadCashPosition(); // Reload the cash position after saving
             toast({
                 title: 'Cash position saved',
                 status: 'success',
@@ -102,6 +103,7 @@ const Portfolio = () => {
                 status: 'error',
                 duration: 2000,
             });
+            throw error; // Re-throw the error to be handled by the child component
         }
     };
 
