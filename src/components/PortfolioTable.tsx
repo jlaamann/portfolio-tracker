@@ -47,26 +47,19 @@ interface EditingPosition {
 
 interface PortfolioTableProps {
     positions: PortfolioPosition[];
-    editingPosition: EditingPosition | null;
     totalPortfolioValue: number;
-    onEdit: (position: PortfolioPosition) => void;
     onDelete: (id: number) => void;
-    onSave: () => void;
-    onCancel: () => void;
-    onEditingPositionChange: (position: EditingPosition) => void;
+    onSave: (position: { id: number; ticker: string; shares: number; buy_price: number }) => Promise<void>;
 }
 
 export const PortfolioTable = ({
     positions,
-    editingPosition,
     totalPortfolioValue,
-    onEdit,
     onDelete,
     onSave,
-    onCancel,
-    onEditingPositionChange,
 }: PortfolioTableProps) => {
     const [positionReturns, setPositionReturns] = useState<Record<number, PositionReturn>>({});
+    const [editingPosition, setEditingPosition] = useState<EditingPosition | null>(null);
     const { exchangeRates, isLoading, error } = useExchangeRates();
     const tableSize = useBreakpointValue({ base: "sm", md: "md" });
 
@@ -121,6 +114,35 @@ export const PortfolioTable = ({
         setPositionReturns(newReturns);
     }, [positions, exchangeRates]);
 
+    const handleEdit = (position: PortfolioPosition) => {
+        setEditingPosition({
+            id: position.id,
+            ticker: position.ticker,
+            shares: position.shares.toString(),
+            buy_price: position.buy_price.toString(),
+        });
+    };
+
+    const handleCancel = () => {
+        setEditingPosition(null);
+    };
+
+    const handleSave = async () => {
+        if (!editingPosition) return;
+
+        try {
+            await onSave({
+                id: editingPosition.id,
+                ticker: editingPosition.ticker.toUpperCase(),
+                shares: parseFloat(editingPosition.shares),
+                buy_price: parseFloat(editingPosition.buy_price),
+            });
+            setEditingPosition(null);
+        } catch (error) {
+            console.error('Error saving position:', error);
+        }
+    };
+
     const renderContent = () => {
         if (isLoading) {
             return (
@@ -159,7 +181,7 @@ export const PortfolioTable = ({
                                 {editingPosition?.id === position.id ? (
                                     <Input
                                         value={editingPosition.ticker}
-                                        onChange={(e) => onEditingPositionChange({
+                                        onChange={(e) => setEditingPosition({
                                             ...editingPosition,
                                             ticker: e.target.value
                                         })}
@@ -173,7 +195,7 @@ export const PortfolioTable = ({
                                 {editingPosition?.id === position.id ? (
                                     <NumberInput
                                         value={editingPosition.shares}
-                                        onChange={(value) => onEditingPositionChange({
+                                        onChange={(value) => setEditingPosition({
                                             ...editingPosition,
                                             shares: value
                                         })}
@@ -194,7 +216,7 @@ export const PortfolioTable = ({
                                 {editingPosition?.id === position.id ? (
                                     <NumberInput
                                         value={editingPosition.buy_price}
-                                        onChange={(value) => onEditingPositionChange({
+                                        onChange={(value) => setEditingPosition({
                                             ...editingPosition,
                                             buy_price: value
                                         })}
@@ -246,14 +268,14 @@ export const PortfolioTable = ({
                                                 icon={<CheckIcon />}
                                                 colorScheme="green"
                                                 size="sm"
-                                                onClick={onSave}
+                                                onClick={handleSave}
                                             />
                                             <IconButton
                                                 aria-label="Cancel editing"
                                                 icon={<CloseIcon />}
                                                 colorScheme="gray"
                                                 size="sm"
-                                                onClick={onCancel}
+                                                onClick={handleCancel}
                                             />
                                         </>
                                     ) : (
@@ -263,7 +285,7 @@ export const PortfolioTable = ({
                                                 icon={<EditIcon />}
                                                 colorScheme="blue"
                                                 size="sm"
-                                                onClick={() => onEdit(position)}
+                                                onClick={() => handleEdit(position)}
                                             />
                                             <IconButton
                                                 aria-label="Delete position"

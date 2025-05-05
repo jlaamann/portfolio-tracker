@@ -151,7 +151,6 @@ const AddPositionForm = ({ onSubmit }: AddPositionFormProps) => {
 
 const Portfolio = () => {
     const [positions, setPositions] = useState<PortfolioPosition[]>([]);
-    const [editingPosition, setEditingPosition] = useState<EditingPosition | null>(null);
     const [cashValue, setCashValue] = useState(0);
     const toast = useToast();
 
@@ -241,15 +240,6 @@ const Portfolio = () => {
         }
     };
 
-    const handleEdit = (position: PortfolioPosition) => {
-        setEditingPosition({
-            id: position.id,
-            ticker: position.ticker,
-            shares: position.shares.toString(),
-            buy_price: position.buy_price.toString(),
-        });
-    };
-
     const handleDelete = async (id: number) => {
         try {
             await deletePosition(id);
@@ -265,6 +255,41 @@ const Portfolio = () => {
                 status: 'error',
                 duration: 2000,
             });
+        }
+    };
+
+    const handleSavePosition = async (data: { id: number; ticker: string; shares: number; buy_price: number }) => {
+        try {
+            const oldPosition = positions.find(p => p.id === data.id);
+            if (!oldPosition) return;
+
+            // If ticker has changed, delete the old position first
+            if (oldPosition.ticker !== data.ticker) {
+                await deletePosition(oldPosition.id);
+            }
+
+            // Add the new/updated position
+            await addPosition({
+                ticker: data.ticker,
+                shares: data.shares,
+                buy_price: data.buy_price,
+                currency: oldPosition.currency,
+            }, true);
+
+            toast({
+                title: 'Position updated',
+                status: 'success',
+                duration: 2000,
+            });
+
+            loadPositions();
+        } catch (error) {
+            toast({
+                title: 'Error updating position',
+                status: 'error',
+                duration: 2000,
+            });
+            throw error;
         }
     };
 
@@ -311,47 +336,6 @@ const Portfolio = () => {
         updateMarketValues();
     }, [positions.length]);
 
-    const handleSave = async () => {
-        if (!editingPosition) return;
-
-        try {
-            const oldPosition = positions.find(p => p.id === editingPosition.id);
-            if (!oldPosition) return;
-
-            // If ticker has changed, delete the old position first
-            if (oldPosition.ticker !== editingPosition.ticker.toUpperCase()) {
-                await deletePosition(oldPosition.id);
-            }
-
-            // Add the new/updated position
-            await addPosition({
-                ticker: editingPosition.ticker.toUpperCase(),
-                shares: parseFloat(editingPosition.shares),
-                buy_price: parseFloat(editingPosition.buy_price),
-                currency: oldPosition.currency,
-            }, true);
-
-            toast({
-                title: 'Position updated',
-                status: 'success',
-                duration: 2000,
-            });
-
-            setEditingPosition(null);
-            loadPositions();
-        } catch (error) {
-            toast({
-                title: 'Error updating position',
-                status: 'error',
-                duration: 2000,
-            });
-        }
-    };
-
-    const handleCancel = () => {
-        setEditingPosition(null);
-    };
-
     return (
         <ExchangeRateProvider currencies={currencies}>
             <Box p={{ base: 2, md: 5 }}>
@@ -368,13 +352,9 @@ const Portfolio = () => {
 
                     <PortfolioTable
                         positions={positions}
-                        editingPosition={editingPosition}
                         totalPortfolioValue={totalPortfolioValue}
-                        onEdit={handleEdit}
                         onDelete={handleDelete}
-                        onSave={handleSave}
-                        onCancel={handleCancel}
-                        onEditingPositionChange={setEditingPosition}
+                        onSave={handleSavePosition}
                     />
                 </VStack>
             </Box>
