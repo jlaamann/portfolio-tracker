@@ -58,7 +58,7 @@ const HistoricalTicker = () => {
     const [endDate, setEndDate] = useState('')
     const [stockData, setStockData] = useState<StockData | null>(null)
     const [loading, setLoading] = useState(false)
-    const [viewMode, setViewMode] = useState<'table' | 'graph'>('table')
+    const [viewMode, setViewMode] = useState<'table' | 'graph'>('graph')
     const toast = useToast()
     const tableSize = useBreakpointValue({ base: "sm", md: "md" })
     const textColor = useColorModeValue('gray.800', 'white')
@@ -220,10 +220,10 @@ const HistoricalTicker = () => {
 
                 {stockData && (
                     <Box>
-                        <Tabs variant="enclosed" mb={4} onChange={(index) => setViewMode(index === 0 ? 'table' : 'graph')}>
+                        <Tabs variant="enclosed" mb={4} onChange={(index) => setViewMode(index === 0 ? 'graph' : 'table')}>
                             <TabList>
-                                <Tab>Table View</Tab>
                                 <Tab>Graph View</Tab>
+                                <Tab>Table View</Tab>
                             </TabList>
                         </Tabs>
 
