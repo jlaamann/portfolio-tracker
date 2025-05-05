@@ -6,7 +6,6 @@ import { useBreakpointValue } from '@chakra-ui/react';
 const Sidebar = () => {
     const location = useLocation();
     const bgColor = useColorModeValue('gray.100', 'gray.700');
-    const activeBgColor = useColorModeValue('blue.200', 'blue.600');
     const { isOpen, onOpen, onClose } = useDisclosure();
     const isMobile = useBreakpointValue({ base: true, md: false });
 
@@ -19,6 +18,10 @@ const Sidebar = () => {
                 variant={location.pathname === '/' ? 'solid' : 'ghost'}
                 justifyContent="flex-start"
                 onClick={isMobile ? onClose : undefined}
+                _hover={{
+                    bg: location.pathname === '/' ? 'blue.400' : undefined,
+                    color: location.pathname === '/' ? 'white' : undefined
+                }}
             >
                 Stock Price Lookup
             </Button>
@@ -29,6 +32,10 @@ const Sidebar = () => {
                 variant={location.pathname === '/portfolio' ? 'solid' : 'ghost'}
                 justifyContent="flex-start"
                 onClick={isMobile ? onClose : undefined}
+                _hover={{
+                    bg: location.pathname === '/portfolio' ? 'blue.400' : undefined,
+                    color: location.pathname === '/portfolio' ? 'white' : undefined
+                }}
             >
                 Portfolio
             </Button>
