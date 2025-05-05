@@ -112,7 +112,7 @@ const Portfolio = () => {
         try {
             await addPosition({
                 ticker: formData.ticker.toUpperCase(),
-                shares: parseInt(formData.shares),
+                shares: parseFloat(formData.shares),
                 buy_price: parseFloat(formData.buy_price),
                 currency: formData.currency,
             });
@@ -225,7 +225,7 @@ const Portfolio = () => {
             // Add the new/updated position
             await addPosition({
                 ticker: editingPosition.ticker.toUpperCase(),
-                shares: parseInt(editingPosition.shares),
+                shares: parseFloat(editingPosition.shares),
                 buy_price: parseFloat(editingPosition.buy_price),
                 currency: oldPosition.currency,
             }, true);
@@ -279,7 +279,7 @@ const Portfolio = () => {
                                 <NumberInput
                                     value={formData.shares}
                                     onChange={(value) => setFormData({ ...formData, shares: value })}
-                                    min={1}
+                                    precision={4}
                                 >
                                     <NumberInputField />
                                     <NumberInputStepper>

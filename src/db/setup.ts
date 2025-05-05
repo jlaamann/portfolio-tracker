@@ -30,7 +30,7 @@ let db: IDBPDatabase<PortfolioDB> | null = null;
 export const initDB = async () => {
     if (db) return db;
 
-    db = await openDB<PortfolioDB>('portfolio-db', 3, {
+    db = await openDB<PortfolioDB>('portfolio-db', 4, {
         upgrade(db) {
             // Create portfolio store if it doesn't exist
             if (!db.objectStoreNames.contains('portfolio')) {
@@ -83,6 +83,11 @@ export const updatePosition = async (id: number, position: Partial<PortfolioDB['
 type NewPosition = Omit<PortfolioDB['portfolio']['value'], 'id' | 'created_at'>;
 
 export const addPosition = async (position: NewPosition, isUpdate: boolean = false) => {
+    // Validate shares is a positive number
+    if (position.shares <= 0) {
+        throw new Error('Shares must be a positive number');
+    }
+
     const db = await getDB();
     const existingPosition = await getPositionByTicker(position.ticker);
 
@@ -94,7 +99,7 @@ export const addPosition = async (position: NewPosition, isUpdate: boolean = fal
 
         // Update existing position
         return updatePosition(existingPosition.id, {
-            shares: totalShares,
+            shares: Number(totalShares.toFixed(4)), // Round to 4 decimal places
             buy_price: averagePrice,
         });
     }
@@ -102,7 +107,7 @@ export const addPosition = async (position: NewPosition, isUpdate: boolean = fal
     // Add new position or update existing one
     if (isUpdate && existingPosition) {
         return updatePosition(existingPosition.id, {
-            shares: position.shares,
+            shares: Number(position.shares.toFixed(4)), // Round to 4 decimal places
             buy_price: position.buy_price,
         });
     }
@@ -110,6 +115,7 @@ export const addPosition = async (position: NewPosition, isUpdate: boolean = fal
     // Add new position
     return db.add('portfolio', {
         ...position,
+        shares: Number(position.shares.toFixed(4)), // Round to 4 decimal places
         created_at: new Date(),
     } as PortfolioDB['portfolio']['value']);
 };

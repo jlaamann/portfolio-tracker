@@ -74,7 +74,7 @@ export const PortfolioSummary = ({ positions, cashValue, onCashValueChange, onSa
                 <StatLabel>Total Portfolio Value</StatLabel>
                 <StatNumber>€{totalValue.toFixed(2)}</StatNumber>
                 <FormControl mt={2}>
-                    <FormLabel fontSize="sm">Cash Position</FormLabel>
+                    <FormLabel fontSize="sm">Cash Position (€)</FormLabel>
                     <HStack>
                         <NumberInput
                             value={localCashValue}

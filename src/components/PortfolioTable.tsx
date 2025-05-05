@@ -109,7 +109,7 @@ export const PortfolioTable = ({
                                             ...editingPosition,
                                             shares: value
                                         })}
-                                        min={1}
+                                        precision={4}
                                         size="sm"
                                     >
                                         <NumberInputField />
