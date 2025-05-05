@@ -17,6 +17,8 @@ import {
     useBreakpointValue,
 } from '@chakra-ui/react';
 import { DeleteIcon, EditIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
+import axios from 'axios';
+import { useState, useEffect } from 'react';
 
 interface PortfolioPosition {
     id: number;
@@ -25,6 +27,11 @@ interface PortfolioPosition {
     buy_price: number;
     currency: string;
     market_value?: number | null;
+}
+
+interface PositionReturn {
+    absolute: number;
+    percentage: number;
 }
 
 interface EditingPosition {
@@ -55,19 +62,55 @@ export const PortfolioTable = ({
     onCancel,
     onEditingPositionChange,
 }: PortfolioTableProps) => {
+    const [positionReturns, setPositionReturns] = useState<Record<number, PositionReturn>>({});
+
+    const getPriceString = (price: number, currency: string) => {
+        return price.toLocaleString('en-US', { style: 'currency', currency: currency ?? "EUR" });
+    };
+
     const getPositionPercentage = (position: PortfolioPosition) => {
         if (position.market_value === null || position.market_value === undefined || totalPortfolioValue === 0) return 0;
         return ((position.market_value * position.shares) / totalPortfolioValue) * 100;
     };
 
-    const getPositionReturn = (position: PortfolioPosition) => {
+    const getPositionReturn = async (position: PortfolioPosition) => {
         if (position.market_value === null || position.market_value === undefined) return { absolute: 0, percentage: 0 };
+
         const costBasis = position.shares * position.buy_price;
-        const marketValue = position.market_value * position.shares;
+        let marketValue = position.market_value * position.shares;
+
+        // Convert market value to the same currency as buy price if needed
+        if (position.currency !== 'EUR') {
+            try {
+                const response = await axios.get(
+                    `http://localhost:3001/api/currency/EUR/${position.currency}`
+                );
+                const exchangeRate = response.data.chart.result[0].meta.regularMarketPrice;
+                marketValue = marketValue * exchangeRate;
+            } catch (error) {
+                console.error('Error fetching exchange rate:', error);
+                return { absolute: 0, percentage: 0 };
+            }
+        }
+
         const absoluteReturn = marketValue - costBasis;
         const percentageReturn = (absoluteReturn / costBasis) * 100;
         return { absolute: absoluteReturn, percentage: percentageReturn };
     };
+
+    useEffect(() => {
+        const updateReturns = async () => {
+            const newReturns: Record<number, PositionReturn> = {};
+            for (const position of positions) {
+                if (position.market_value !== null && position.market_value !== undefined) {
+                    newReturns[position.id] = await getPositionReturn(position);
+                }
+            }
+            setPositionReturns(newReturns);
+        };
+
+        updateReturns();
+    }, [positions]);
 
     return (
         <Box overflowX="auto" width="100%">
@@ -147,7 +190,7 @@ export const PortfolioTable = ({
                             <Td>{position.currency}</Td>
                             <Td>
                                 {position.market_value !== undefined && position.market_value !== null
-                                    ? `€${(position.market_value * position.shares).toFixed(2)}`
+                                    ? getPriceString(position.market_value * position.shares, 'EUR')
                                     : 'Loading...'}
                             </Td>
                             <Td>
@@ -158,11 +201,11 @@ export const PortfolioTable = ({
                             <Td>
                                 {position.market_value !== undefined && position.market_value !== null ? (
                                     <Box>
-                                        <Box color={getPositionReturn(position).absolute >= 0 ? 'green.500' : 'red.500'}>
-                                            €{getPositionReturn(position).absolute.toFixed(2)}
+                                        <Box color={positionReturns[position.id]?.absolute >= 0 ? 'green.500' : 'red.500'}>
+                                            {getPriceString(positionReturns[position.id]?.absolute || 0, position.currency)}
                                         </Box>
-                                        <Box fontSize="sm" color={getPositionReturn(position).percentage >= 0 ? 'green.500' : 'red.500'}>
-                                            {getPositionReturn(position).percentage.toFixed(2)}%
+                                        <Box fontSize="sm" color={positionReturns[position.id]?.percentage >= 0 ? 'green.500' : 'red.500'}>
+                                            {positionReturns[position.id]?.percentage.toFixed(2) || '0.00'}%
                                         </Box>
                                     </Box>
                                 ) : (
