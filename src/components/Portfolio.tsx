@@ -90,6 +90,18 @@ const Portfolio = () => {
     });
     const toast = useToast();
 
+    // Calculate total portfolio value
+    const totalPortfolioValue = positions.reduce((sum, pos) => {
+        if (pos.market_value === null || pos.market_value === undefined) return sum;
+        return sum + (pos.market_value * pos.shares);
+    }, 0);
+
+    // Calculate position percentage
+    const getPositionPercentage = (position: PortfolioPosition) => {
+        if (position.market_value === null || position.market_value === undefined || totalPortfolioValue === 0) return 0;
+        return ((position.market_value * position.shares) / totalPortfolioValue) * 100;
+    };
+
     useEffect(() => {
         loadPositions();
     }, []);
@@ -329,6 +341,7 @@ const Portfolio = () => {
                                 <Th>Avg Price</Th>
                                 <Th>Currency</Th>
                                 <Th>Market Value</Th>
+                                <Th>% of Portfolio</Th>
                                 <Th>Actions</Th>
                             </Tr>
                         </Thead>
@@ -396,6 +409,11 @@ const Portfolio = () => {
                                     <Td>
                                         {position.market_value !== undefined && position.market_value !== null
                                             ? `€${(position.market_value * position.shares).toFixed(2)}`
+                                            : 'Loading...'}
+                                    </Td>
+                                    <Td>
+                                        {position.market_value !== undefined && position.market_value !== null
+                                            ? `${getPositionPercentage(position).toFixed(2)}%`
                                             : 'Loading...'}
                                     </Td>
                                     <Td>
