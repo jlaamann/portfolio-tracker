@@ -73,7 +73,7 @@ const Portfolio = () => {
             });
 
             toast({
-                title: 'Position added',
+                title: 'Position updated',
                 status: 'success',
                 duration: 2000,
             });
@@ -88,7 +88,7 @@ const Portfolio = () => {
             loadPositions();
         } catch (error) {
             toast({
-                title: 'Error adding position',
+                title: 'Error updating position',
                 status: 'error',
                 duration: 2000,
             });
@@ -188,7 +188,7 @@ const Portfolio = () => {
                         </FormControl>
 
                         <FormControl isRequired>
-                            <FormLabel>Buy Price</FormLabel>
+                            <FormLabel>Average Price</FormLabel>
                             <NumberInput
                                 value={formData.buy_price}
                                 onChange={(value) => setFormData({ ...formData, buy_price: value })}
@@ -228,7 +228,7 @@ const Portfolio = () => {
                             <Tr>
                                 <Th>Ticker</Th>
                                 <Th>Shares</Th>
-                                <Th>Buy Price</Th>
+                                <Th>Average Price</Th>
                                 <Th>Currency</Th>
                                 <Th>Market Value (EUR)</Th>
                                 <Th>Actions</Th>
