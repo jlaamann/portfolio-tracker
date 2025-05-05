@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Box,
     VStack,
@@ -90,9 +90,13 @@ const Portfolio = () => {
         loadCashPosition();
     }, []);
 
-    const handleSaveCash = async () => {
+    const handleSaveCash = async (amount: number) => {
         try {
-            await saveCashPosition(cashValue);
+            // Save the current cash value to the database
+            await saveCashPosition(amount);
+            // Reload to ensure consistency
+            setCashValue(amount);
+            // await loadCashPosition();
             toast({
                 title: 'Cash position saved',
                 status: 'success',

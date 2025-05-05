@@ -32,7 +32,7 @@ interface PortfolioSummaryProps {
     positions: PortfolioPosition[];
     cashValue: number;
     onCashValueChange: (value: number) => void;
-    onSaveCash: () => Promise<void>;
+    onSaveCash: (amount: number) => Promise<void>;
 }
 
 export const PortfolioSummary = ({ positions, cashValue, onCashValueChange, onSaveCash }: PortfolioSummaryProps) => {
@@ -53,10 +53,10 @@ export const PortfolioSummary = ({ positions, cashValue, onCashValueChange, onSa
 
     const handleSave = async () => {
         try {
-            // First save to database
-            await onSaveCash();
-            // Then update parent state
+            // First update parent state
             onCashValueChange(localCashValue);
+            // Then save to database
+            await onSaveCash(localCashValue);
             setIsCashModified(false);
         } catch (error) {
             console.error('Failed to save cash position:', error);

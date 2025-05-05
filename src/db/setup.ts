@@ -154,6 +154,7 @@ export const deletePosition = async (id: number) => {
 };
 
 export const saveCashPosition = async (amount: number) => {
+    console.log('Saving cash position:', amount);
     const db = await getDB();
     return db.put('cash', {
         key: 'current',
