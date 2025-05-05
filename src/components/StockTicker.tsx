@@ -68,6 +68,11 @@ const StockTicker = () => {
         });
     }
 
+    const getMillionsString = (value: number) => {
+        if (value === undefined || value === null) return 'N/A';
+        return `$${(value / 1000000).toFixed(2)}M`;
+    }
+
     const getLargeNumberString = (value: number) => {
         if (value >= 1e12) return `${(value / 1e12).toFixed(2)}T`;
         if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
@@ -109,7 +114,7 @@ const StockTicker = () => {
                 price: quote['05. price'],
                 currency: 'USD',
                 marketCap: parseFloat(overview.MarketCapitalization),
-                enterpriseValue: parseFloat(overview.MarketCapitalization) + parseFloat(overview.TotalDebt) - parseFloat(overview.CashAndCashEquivalents),
+                enterpriseValue: parseFloat(overview.EVToEBITDA) * parseFloat(income.ebitda),
                 peRatio: parseFloat(overview.PERatio),
                 forwardPE: parseFloat(overview.ForwardPE),
                 pegRatio: parseFloat(overview.PEGRatio),
@@ -176,15 +181,15 @@ const StockTicker = () => {
                             </Stat>
                             <Stat>
                                 <StatLabel>Market Cap</StatLabel>
-                                <StatNumber>{getPriceString(stockData.marketCap, stockData.currency)}</StatNumber>
+                                <StatNumber>{getMillionsString(stockData.marketCap)}</StatNumber>
                             </Stat>
                             <Stat>
                                 <StatLabel>Enterprise Value</StatLabel>
-                                <StatNumber>{getPriceString(stockData.enterpriseValue, stockData.currency)}</StatNumber>
+                                <StatNumber>{getMillionsString(stockData.enterpriseValue)}</StatNumber>
                             </Stat>
                             <Stat>
                                 <StatLabel>Revenue</StatLabel>
-                                <StatNumber>{getPriceString(stockData.revenue, stockData.currency)}</StatNumber>
+                                <StatNumber>{getMillionsString(stockData.revenue)}</StatNumber>
                                 {stockData.revenueGrowth && (
                                     <StatHelpText>
                                         <StatArrow type={stockData.revenueGrowth >= 0 ? 'increase' : 'decrease'} />
@@ -194,14 +199,14 @@ const StockTicker = () => {
                             </Stat>
                             <Stat>
                                 <StatLabel>EBITDA</StatLabel>
-                                <StatNumber>{getPriceString(stockData.ebitda, stockData.currency)}</StatNumber>
+                                <StatNumber>{getMillionsString(stockData.ebitda)}</StatNumber>
                                 <StatHelpText>
                                     Margin: {getPercentageString(stockData.ebitdaMargin)}
                                 </StatHelpText>
                             </Stat>
                             <Stat>
                                 <StatLabel>Net Income</StatLabel>
-                                <StatNumber>{getPriceString(stockData.netIncome, stockData.currency)}</StatNumber>
+                                <StatNumber>{getMillionsString(stockData.netIncome)}</StatNumber>
                                 <StatHelpText>
                                     Margin: {getPercentageString(stockData.profitMargin)}
                                 </StatHelpText>
