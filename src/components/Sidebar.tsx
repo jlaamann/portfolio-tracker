@@ -80,7 +80,7 @@ const Sidebar = () => {
 
     return (
         <Box
-            w="200px"
+            w="250px"
             h="100vh"
             bg={bgColor}
             p={4}

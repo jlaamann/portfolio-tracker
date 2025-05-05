@@ -15,7 +15,7 @@ function App() {
         <Box display="flex">
           <Sidebar />
           <Box
-            ml={isMobile ? 0 : "200px"}
+            ml={isMobile ? 0 : "250px"}
             p={4}
             flex="1"
             width="100%"
