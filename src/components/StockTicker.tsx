@@ -15,18 +15,10 @@ import {
     useToast,
 } from '@chakra-ui/react'
 import axios from 'axios'
-import { ALPHA_VANTAGE_API_KEY } from '../API_KEY'
 
 interface StockData {
     symbol: string
     price: string
-    change: string
-    changePercent: string
-    open: string
-    high: string
-    low: string
-    volume: string
-    previousClose: string
 }
 
 const StockTicker = () => {
@@ -48,28 +40,19 @@ const StockTicker = () => {
         setLoading(true)
         try {
             const response = await axios.get(
-                `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
+                `http://localhost:3001/api/stock/${ticker}`
             )
 
-            if (response.data['Error Message']) {
-                throw new Error(response.data['Error Message'])
-            }
-
-            const quote = response.data['Global Quote']
-            if (!quote) {
+            if (!response.data.chart.result || response.data.chart.result.length === 0) {
                 throw new Error('No data found for this ticker')
             }
 
+            const quote = response.data.chart.result[0].meta
+            const regularMarketPrice = quote.regularMarketPrice
+
             setStockData({
-                symbol: quote['01. symbol'],
-                price: quote['05. price'],
-                change: quote['09. change'],
-                changePercent: quote['10. change percent'],
-                open: quote['02. open'],
-                high: quote['03. high'],
-                low: quote['04. low'],
-                volume: quote['06. volume'],
-                previousClose: quote['08. previous close'],
+                symbol: ticker,
+                price: regularMarketPrice.toFixed(2),
             })
         } catch (error) {
             toast({
@@ -120,34 +103,6 @@ const StockTicker = () => {
                                 <Tr>
                                     <Td>Current Price</Td>
                                     <Td>${stockData.price}</Td>
-                                </Tr>
-                                <Tr>
-                                    <Td>Change</Td>
-                                    <Td>
-                                        <Text color={parseFloat(stockData.change) >= 0 ? 'green.500' : 'red.500'}>
-                                            {stockData.change} ({stockData.changePercent})
-                                        </Text>
-                                    </Td>
-                                </Tr>
-                                <Tr>
-                                    <Td>Open</Td>
-                                    <Td>${stockData.open}</Td>
-                                </Tr>
-                                <Tr>
-                                    <Td>High</Td>
-                                    <Td>${stockData.high}</Td>
-                                </Tr>
-                                <Tr>
-                                    <Td>Low</Td>
-                                    <Td>${stockData.low}</Td>
-                                </Tr>
-                                <Tr>
-                                    <Td>Volume</Td>
-                                    <Td>{parseInt(stockData.volume).toLocaleString()}</Td>
-                                </Tr>
-                                <Tr>
-                                    <Td>Previous Close</Td>
-                                    <Td>${stockData.previousClose}</Td>
                                 </Tr>
                             </Tbody>
                         </Table>

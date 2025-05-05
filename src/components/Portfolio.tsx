@@ -24,7 +24,6 @@ import {
 } from '@chakra-ui/react';
 import { DeleteIcon } from '@chakra-ui/icons';
 import { addPosition, getAllPositions, deletePosition } from '../db/setup';
-import { ALPHA_VANTAGE_API_KEY } from '../API_KEY';
 import axios from 'axios';
 
 interface PortfolioPosition {
@@ -117,27 +116,23 @@ const Portfolio = () => {
     const fetchMarketValue = async (ticker: string, currency: string) => {
         try {
             const response = await axios.get(
-                `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
+                `http://localhost:3001/api/stock/${ticker}`
             );
 
-            if (response.data['Error Message']) {
+            if (!response.data.chart.result || response.data.chart.result.length === 0) {
                 return null;
             }
 
-            const quote = response.data['Global Quote'];
-            if (!quote) {
-                return null;
-            }
-
-            const price = parseFloat(quote['05. price']);
+            const quote = response.data.chart.result[0].meta;
+            const price = quote.regularMarketPrice;
 
             // Convert to EUR if needed
             if (currency !== 'EUR') {
                 const exchangeResponse = await axios.get(
-                    `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${currency}&to_currency=EUR&apikey=${ALPHA_VANTAGE_API_KEY}`
+                    `http://localhost:3001/api/currency/${currency}/EUR`
                 );
-                const rate = parseFloat(exchangeResponse.data['Realtime Currency Exchange Rate']['5. Exchange Rate']);
-                return price * rate;
+                const exchangeRate = exchangeResponse.data.chart.result[0].meta.regularMarketPrice;
+                return price * exchangeRate;
             }
 
             return price;
