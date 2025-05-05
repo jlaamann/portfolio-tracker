@@ -102,6 +102,16 @@ const Portfolio = () => {
         return ((position.market_value * position.shares) / totalPortfolioValue) * 100;
     };
 
+    // Calculate position return
+    const getPositionReturn = (position: PortfolioPosition) => {
+        if (position.market_value === null || position.market_value === undefined) return { absolute: 0, percentage: 0 };
+        const costBasis = position.shares * position.buy_price;
+        const marketValue = position.market_value * position.shares;
+        const absoluteReturn = marketValue - costBasis;
+        const percentageReturn = (absoluteReturn / costBasis) * 100;
+        return { absolute: absoluteReturn, percentage: percentageReturn };
+    };
+
     useEffect(() => {
         loadPositions();
     }, []);
@@ -342,6 +352,7 @@ const Portfolio = () => {
                                 <Th>Currency</Th>
                                 <Th>Market Value</Th>
                                 <Th>% of Portfolio</Th>
+                                <Th>Total Return</Th>
                                 <Th>Actions</Th>
                             </Tr>
                         </Thead>
@@ -415,6 +426,20 @@ const Portfolio = () => {
                                         {position.market_value !== undefined && position.market_value !== null
                                             ? `${getPositionPercentage(position).toFixed(2)}%`
                                             : 'Loading...'}
+                                    </Td>
+                                    <Td>
+                                        {position.market_value !== undefined && position.market_value !== null ? (
+                                            <Box>
+                                                <Box color={getPositionReturn(position).absolute >= 0 ? 'green.500' : 'red.500'}>
+                                                    €{getPositionReturn(position).absolute.toFixed(2)}
+                                                </Box>
+                                                <Box fontSize="sm" color={getPositionReturn(position).percentage >= 0 ? 'green.500' : 'red.500'}>
+                                                    {getPositionReturn(position).percentage.toFixed(2)}%
+                                                </Box>
+                                            </Box>
+                                        ) : (
+                                            'Loading...'
+                                        )}
                                     </Td>
                                     <Td>
                                         <HStack spacing={2}>
