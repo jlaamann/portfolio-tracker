@@ -30,27 +30,44 @@ let db: IDBPDatabase<PortfolioDB> | null = null;
 export const initDB = async () => {
     if (db) return db;
 
-    db = await openDB<PortfolioDB>('portfolio-db', 4, {
-        upgrade(db) {
-            // Create portfolio store if it doesn't exist
-            if (!db.objectStoreNames.contains('portfolio')) {
-                const store = db.createObjectStore('portfolio', {
-                    keyPath: 'id',
-                    autoIncrement: true,
-                });
-                store.createIndex('by-ticker', 'ticker');
-            }
+    try {
+        db = await openDB<PortfolioDB>('portfolio-db', 10, {
+            upgrade(db, oldVersion, newVersion) {
+                console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
 
-            // Create cash store if it doesn't exist
-            if (!db.objectStoreNames.contains('cash')) {
-                db.createObjectStore('cash', {
-                    keyPath: 'key',
-                });
-            }
-        },
-    });
+                // Create portfolio store if it doesn't exist
+                if (!db.objectStoreNames.contains('portfolio')) {
+                    const store = db.createObjectStore('portfolio', {
+                        keyPath: 'id',
+                        autoIncrement: true,
+                    });
+                    store.createIndex('by-ticker', 'ticker');
+                }
 
-    return db;
+                // Create cash store if it doesn't exist
+                if (!db.objectStoreNames.contains('cash')) {
+                    db.createObjectStore('cash', {
+                        keyPath: 'key',
+                    });
+                }
+            },
+            blocked() {
+                console.error('Database upgrade blocked');
+            },
+            blocking() {
+                console.error('Database upgrade blocking');
+            },
+            terminated() {
+                console.error('Database connection terminated');
+                db = null;
+            },
+        });
+
+        return db;
+    } catch (error) {
+        console.error('Failed to initialize database:', error);
+        throw error;
+    }
 };
 
 export const getDB = async () => {
@@ -121,8 +138,14 @@ export const addPosition = async (position: NewPosition, isUpdate: boolean = fal
 };
 
 export const getAllPositions = async () => {
-    const db = await getDB();
-    return db.getAll('portfolio');
+    try {
+        const db = await getDB();
+        const positions = await db.getAll('portfolio');
+        return positions;
+    } catch (error) {
+        console.error('Failed to get all positions:', error);
+        throw error;
+    }
 };
 
 export const deletePosition = async (id: number) => {
