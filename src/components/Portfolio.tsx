@@ -31,7 +31,7 @@ import {
     HStack,
 } from '@chakra-ui/react';
 import { DeleteIcon, EditIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
-import { addPosition, getAllPositions, deletePosition } from '../db/setup';
+import { addPosition, getAllPositions, deletePosition, saveCashPosition, getCashPosition } from '../db/setup';
 import axios from 'axios';
 
 interface PortfolioPosition {
@@ -50,13 +50,19 @@ interface EditingPosition {
     buy_price: string;
 }
 
-const PortfolioSummary = ({ positions }: { positions: PortfolioPosition[] }) => {
+const PortfolioSummary = ({ positions, cashValue, onCashValueChange, onSaveCash }: {
+    positions: PortfolioPosition[],
+    cashValue: number,
+    onCashValueChange: (value: number) => void,
+    onSaveCash: () => void
+}) => {
     const totalCost = positions.reduce((sum, pos) => sum + (pos.buy_price * pos.shares), 0);
-    const totalValue = positions.reduce((sum, pos) => {
+    const stockValue = positions.reduce((sum, pos) => {
         if (pos.market_value === null || pos.market_value === undefined) return sum;
         return sum + (pos.market_value * pos.shares);
     }, 0);
-    const profitLoss = totalValue - totalCost;
+    const totalValue = stockValue + cashValue;
+    const profitLoss = stockValue - totalCost;
     const profitLossPercentage = (profitLoss / totalCost) * 100;
 
     return (
@@ -64,6 +70,32 @@ const PortfolioSummary = ({ positions }: { positions: PortfolioPosition[] }) => 
             <Stat>
                 <StatLabel>Total Portfolio Value</StatLabel>
                 <StatNumber>€{totalValue.toFixed(2)}</StatNumber>
+                <FormControl mt={2}>
+                    <FormLabel fontSize="sm">Cash Position</FormLabel>
+                    <HStack>
+                        <NumberInput
+                            value={cashValue}
+                            onChange={(value) => onCashValueChange(Number(value))}
+                            min={0}
+                            precision={2}
+                            size="sm"
+                            flex="1"
+                        >
+                            <NumberInputField />
+                            <NumberInputStepper>
+                                <NumberIncrementStepper />
+                                <NumberDecrementStepper />
+                            </NumberInputStepper>
+                        </NumberInput>
+                        <IconButton
+                            aria-label="Save cash position"
+                            icon={<CheckIcon />}
+                            colorScheme="green"
+                            size="sm"
+                            onClick={onSaveCash}
+                        />
+                    </HStack>
+                </FormControl>
             </Stat>
             <Stat>
                 <StatLabel>Profit/Loss</StatLabel>
@@ -82,6 +114,7 @@ const PortfolioSummary = ({ positions }: { positions: PortfolioPosition[] }) => 
 const Portfolio = () => {
     const [positions, setPositions] = useState<PortfolioPosition[]>([]);
     const [editingPosition, setEditingPosition] = useState<EditingPosition | null>(null);
+    const [cashValue, setCashValue] = useState(0);
     const [formData, setFormData] = useState({
         ticker: '',
         shares: '',
@@ -94,7 +127,7 @@ const Portfolio = () => {
     const totalPortfolioValue = positions.reduce((sum, pos) => {
         if (pos.market_value === null || pos.market_value === undefined) return sum;
         return sum + (pos.market_value * pos.shares);
-    }, 0);
+    }, 0) + cashValue;
 
     // Calculate position percentage
     const getPositionPercentage = (position: PortfolioPosition) => {
@@ -112,9 +145,18 @@ const Portfolio = () => {
         return { absolute: absoluteReturn, percentage: percentageReturn };
     };
 
-    useEffect(() => {
-        loadPositions();
-    }, []);
+    const loadCashPosition = async () => {
+        try {
+            const cash = await getCashPosition();
+            setCashValue(cash);
+        } catch (error) {
+            toast({
+                title: 'Error loading cash position',
+                status: 'error',
+                duration: 2000,
+            });
+        }
+    };
 
     const loadPositions = async () => {
         try {
@@ -123,6 +165,28 @@ const Portfolio = () => {
         } catch (error) {
             toast({
                 title: 'Error loading positions',
+                status: 'error',
+                duration: 2000,
+            });
+        }
+    };
+
+    useEffect(() => {
+        loadPositions();
+        loadCashPosition();
+    }, []);
+
+    const handleSaveCash = async () => {
+        try {
+            await saveCashPosition(cashValue);
+            toast({
+                title: 'Cash position saved',
+                status: 'success',
+                duration: 2000,
+            });
+        } catch (error) {
+            toast({
+                title: 'Error saving cash position',
                 status: 'error',
                 duration: 2000,
             });
@@ -277,7 +341,12 @@ const Portfolio = () => {
         <Box p={{ base: 2, md: 5 }}>
             <VStack spacing={8} align="stretch">
                 <Heading size="lg" textAlign="center">My Portfolio</Heading>
-                <PortfolioSummary positions={positions} />
+                <PortfolioSummary
+                    positions={positions}
+                    cashValue={cashValue}
+                    onCashValueChange={setCashValue}
+                    onSaveCash={handleSaveCash}
+                />
 
                 <Box as="form" onSubmit={handleSubmit} p={{ base: 3, md: 5 }} shadow="md" borderWidth="1px" borderRadius="md">
                     <VStack spacing={4}>

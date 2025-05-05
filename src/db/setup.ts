@@ -15,6 +15,14 @@ interface PortfolioDB extends DBSchema {
             'by-ticker': string;
         };
     };
+    cash: {
+        key: string;
+        value: {
+            key: string;
+            amount: number;
+            updated_at: Date;
+        };
+    };
 }
 
 let db: IDBPDatabase<PortfolioDB> | null = null;
@@ -22,13 +30,23 @@ let db: IDBPDatabase<PortfolioDB> | null = null;
 export const initDB = async () => {
     if (db) return db;
 
-    db = await openDB<PortfolioDB>('portfolio-db', 1, {
+    db = await openDB<PortfolioDB>('portfolio-db', 3, {
         upgrade(db) {
-            const store = db.createObjectStore('portfolio', {
-                keyPath: 'id',
-                autoIncrement: true,
-            });
-            store.createIndex('by-ticker', 'ticker');
+            // Create portfolio store if it doesn't exist
+            if (!db.objectStoreNames.contains('portfolio')) {
+                const store = db.createObjectStore('portfolio', {
+                    keyPath: 'id',
+                    autoIncrement: true,
+                });
+                store.createIndex('by-ticker', 'ticker');
+            }
+
+            // Create cash store if it doesn't exist
+            if (!db.objectStoreNames.contains('cash')) {
+                db.createObjectStore('cash', {
+                    keyPath: 'key',
+                });
+            }
         },
     });
 
@@ -104,4 +122,19 @@ export const getAllPositions = async () => {
 export const deletePosition = async (id: number) => {
     const db = await getDB();
     return db.delete('portfolio', id);
+};
+
+export const saveCashPosition = async (amount: number) => {
+    const db = await getDB();
+    return db.put('cash', {
+        key: 'current',
+        amount,
+        updated_at: new Date()
+    });
+};
+
+export const getCashPosition = async () => {
+    const db = await getDB();
+    const cashData = await db.get('cash', 'current');
+    return cashData?.amount || 0;
 }; 
