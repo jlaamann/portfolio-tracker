@@ -71,7 +71,12 @@ export const PortfolioTable = ({
     const tableSize = useBreakpointValue({ base: "sm", md: "md" });
 
     const getPriceString = (price: number, currency: string) => {
-        return price.toLocaleString('en-US', { style: 'currency', currency: currency ?? "EUR" });
+        return price.toLocaleString('en-US', {
+            style: 'currency',
+            currency: currency ?? "EUR",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
     };
 
     const getPositionPercentage = (position: PortfolioPosition) => {

@@ -65,7 +65,12 @@ const HistoricalTicker = () => {
     const gridColor = useColorModeValue('gray.200', 'gray.700')
 
     const getPriceString = (price: number, currency: string) => {
-        return price.toLocaleString('en-US', { style: 'currency', currency: currency ?? "EUR" });
+        return price.toLocaleString('en-US', {
+            style: 'currency',
+            currency: currency ?? "EUR",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
     }
 
     const formatDate = (timestamp: number) => {

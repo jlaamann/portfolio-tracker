@@ -90,7 +90,7 @@ export const PortfolioSummary = ({ positions, cashValue, onCashValueChange, onSa
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%" mb={4}>
             <Stat>
                 <StatLabel>Total Portfolio Value</StatLabel>
-                <StatNumber>€{totalValue.toFixed(2)}</StatNumber>
+                <StatNumber>€{totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</StatNumber>
                 <FormControl mt={2}>
                     <FormLabel fontSize="sm">Cash Position (€)</FormLabel>
                     <HStack>
@@ -123,11 +123,11 @@ export const PortfolioSummary = ({ positions, cashValue, onCashValueChange, onSa
             <Stat>
                 <StatLabel>Profit/Loss</StatLabel>
                 <StatNumber color={profitLoss >= 0 ? 'green.500' : 'red.500'}>
-                    €{profitLoss.toFixed(2)}
+                    €{profitLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </StatNumber>
                 <StatHelpText>
                     <StatArrow type={profitLoss >= 0 ? 'increase' : 'decrease'} />
-                    {profitLossPercentage.toFixed(2)}%
+                    {profitLossPercentage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
                 </StatHelpText>
             </Stat>
         </SimpleGrid>

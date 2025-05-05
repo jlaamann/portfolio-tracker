@@ -64,25 +64,30 @@ const StockTicker = () => {
         return numericPrice.toLocaleString('en-US', {
             style: 'currency',
             currency: currency ?? "USD",
-            maximumFractionDigits: 2
+            maximumFractionDigits: 2,
+            minimumFractionDigits: 2
         });
     }
 
     const getMillionsString = (value: number) => {
         if (value === undefined || value === null) return 'N/A';
-        return `$${(value / 1000000).toFixed(2)}M`;
+        const millions = value / 1000000;
+        return `$${millions.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        })}M`;
     }
 
     const getLargeNumberString = (value: number) => {
-        if (value >= 1e12) return `${(value / 1e12).toFixed(2)}T`;
-        if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
-        if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
-        if (value >= 1e3) return `${(value / 1e3).toFixed(2)}K`;
-        return value.toFixed(2);
+        if (value >= 1e12) return `${(value / 1e12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}T`;
+        if (value >= 1e9) return `${(value / 1e9).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}B`;
+        if (value >= 1e6) return `${(value / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M`;
+        if (value >= 1e3) return `${(value / 1e3).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}K`;
+        return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     const getPercentageString = (value: number) => {
-        return `${(value * 100).toFixed(2)}%`;
+        return `${(value * 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
     }
 
     const fetchStockData = async () => {
@@ -98,7 +103,7 @@ const StockTicker = () => {
         setLoading(true)
         try {
             const response = await axios.get(
-                `http://localhost:3001/api/stock/${ticker}`
+                `http://localhost:3001/api/stock/${ticker}/detailed`
             )
 
             const quote = response.data.quote['Global Quote'];

@@ -15,6 +15,19 @@ app.use(express.json());
 app.get('/api/stock/:ticker', async (req, res) => {
     try {
         const { ticker } = req.params;
+        const response = await axios.get(
+            `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`
+        );
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Proxy endpoint for detailed stock data
+app.get('/api/stock/:ticker/detailed', async (req, res) => {
+    try {
+        const { ticker } = req.params;
         const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
 
         if (!apiKey) {
