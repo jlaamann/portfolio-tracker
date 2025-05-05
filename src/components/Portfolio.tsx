@@ -28,8 +28,9 @@ import {
     StatNumber,
     StatHelpText,
     StatArrow,
+    HStack,
 } from '@chakra-ui/react';
-import { DeleteIcon } from '@chakra-ui/icons';
+import { DeleteIcon, EditIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
 import { addPosition, getAllPositions, deletePosition } from '../db/setup';
 import axios from 'axios';
 
@@ -40,6 +41,13 @@ interface PortfolioPosition {
     buy_price: number;
     currency: string;
     market_value?: number | null;
+}
+
+interface EditingPosition {
+    id: number;
+    ticker: string;
+    shares: string;
+    buy_price: string;
 }
 
 const PortfolioSummary = ({ positions }: { positions: PortfolioPosition[] }) => {
@@ -73,6 +81,7 @@ const PortfolioSummary = ({ positions }: { positions: PortfolioPosition[] }) => 
 
 const Portfolio = () => {
     const [positions, setPositions] = useState<PortfolioPosition[]>([]);
+    const [editingPosition, setEditingPosition] = useState<EditingPosition | null>(null);
     const [formData, setFormData] = useState({
         ticker: '',
         shares: '',
@@ -192,6 +201,47 @@ const Portfolio = () => {
         updateMarketValues();
     }, [positions.length]);
 
+    const handleEdit = (position: PortfolioPosition) => {
+        setEditingPosition({
+            id: position.id,
+            ticker: position.ticker,
+            shares: position.shares.toString(),
+            buy_price: position.buy_price.toString(),
+        });
+    };
+
+    const handleSave = async () => {
+        if (!editingPosition) return;
+
+        try {
+            await addPosition({
+                ticker: editingPosition.ticker.toUpperCase(),
+                shares: parseInt(editingPosition.shares),
+                buy_price: parseFloat(editingPosition.buy_price),
+                currency: positions.find(p => p.id === editingPosition.id)?.currency || 'USD',
+            });
+
+            toast({
+                title: 'Position updated',
+                status: 'success',
+                duration: 2000,
+            });
+
+            setEditingPosition(null);
+            loadPositions();
+        } catch (error) {
+            toast({
+                title: 'Error updating position',
+                status: 'error',
+                duration: 2000,
+            });
+        }
+    };
+
+    const handleCancel = () => {
+        setEditingPosition(null);
+    };
+
     return (
         <Box p={{ base: 2, md: 5 }}>
             <VStack spacing={8} align="stretch">
@@ -276,9 +326,63 @@ const Portfolio = () => {
                         <Tbody>
                             {positions.map((position) => (
                                 <Tr key={position.id}>
-                                    <Td>{position.ticker}</Td>
-                                    <Td>{position.shares}</Td>
-                                    <Td>{position.buy_price}</Td>
+                                    <Td>
+                                        {editingPosition?.id === position.id ? (
+                                            <Input
+                                                value={editingPosition.ticker}
+                                                onChange={(e) => setEditingPosition({
+                                                    ...editingPosition,
+                                                    ticker: e.target.value
+                                                })}
+                                                size="sm"
+                                            />
+                                        ) : (
+                                            position.ticker
+                                        )}
+                                    </Td>
+                                    <Td>
+                                        {editingPosition?.id === position.id ? (
+                                            <NumberInput
+                                                value={editingPosition.shares}
+                                                onChange={(value) => setEditingPosition({
+                                                    ...editingPosition,
+                                                    shares: value
+                                                })}
+                                                min={1}
+                                                size="sm"
+                                            >
+                                                <NumberInputField />
+                                                <NumberInputStepper>
+                                                    <NumberIncrementStepper />
+                                                    <NumberDecrementStepper />
+                                                </NumberInputStepper>
+                                            </NumberInput>
+                                        ) : (
+                                            position.shares
+                                        )}
+                                    </Td>
+                                    <Td>
+                                        {editingPosition?.id === position.id ? (
+                                            <NumberInput
+                                                value={editingPosition.buy_price}
+                                                onChange={(value) => setEditingPosition({
+                                                    ...editingPosition,
+                                                    buy_price: value
+                                                })}
+                                                min={0}
+                                                precision={2}
+                                                size="sm"
+                                            >
+                                                <NumberInputField />
+                                                <NumberInputStepper>
+                                                    <NumberIncrementStepper />
+                                                    <NumberDecrementStepper />
+                                                </NumberInputStepper>
+                                            </NumberInput>
+                                        ) : (
+                                            position.buy_price
+                                        )}
+                                    </Td>
                                     <Td>{position.currency}</Td>
                                     <Td>
                                         {position.market_value !== undefined && position.market_value !== null
@@ -286,13 +390,43 @@ const Portfolio = () => {
                                             : 'Loading...'}
                                     </Td>
                                     <Td>
-                                        <IconButton
-                                            aria-label="Delete position"
-                                            icon={<DeleteIcon />}
-                                            colorScheme="red"
-                                            size="sm"
-                                            onClick={() => handleDelete(position.id)}
-                                        />
+                                        <HStack spacing={2}>
+                                            {editingPosition?.id === position.id ? (
+                                                <>
+                                                    <IconButton
+                                                        aria-label="Save changes"
+                                                        icon={<CheckIcon />}
+                                                        colorScheme="green"
+                                                        size="sm"
+                                                        onClick={handleSave}
+                                                    />
+                                                    <IconButton
+                                                        aria-label="Cancel editing"
+                                                        icon={<CloseIcon />}
+                                                        colorScheme="gray"
+                                                        size="sm"
+                                                        onClick={handleCancel}
+                                                    />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <IconButton
+                                                        aria-label="Edit position"
+                                                        icon={<EditIcon />}
+                                                        colorScheme="blue"
+                                                        size="sm"
+                                                        onClick={() => handleEdit(position)}
+                                                    />
+                                                    <IconButton
+                                                        aria-label="Delete position"
+                                                        icon={<DeleteIcon />}
+                                                        colorScheme="red"
+                                                        size="sm"
+                                                        onClick={() => handleDelete(position.id)}
+                                                    />
+                                                </>
+                                            )}
+                                        </HStack>
                                     </Td>
                                 </Tr>
                             ))}
