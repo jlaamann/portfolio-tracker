@@ -6,13 +6,6 @@ import {
     FormLabel,
     Input,
     Button,
-    Table,
-    Thead,
-    Tbody,
-    Tr,
-    Th,
-    Td,
-    IconButton,
     useToast,
     Heading,
     NumberInput,
@@ -22,17 +15,11 @@ import {
     NumberDecrementStepper,
     Select,
     SimpleGrid,
-    useBreakpointValue,
-    Stat,
-    StatLabel,
-    StatNumber,
-    StatHelpText,
-    StatArrow,
-    HStack,
 } from '@chakra-ui/react';
-import { DeleteIcon, EditIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
 import { addPosition, getAllPositions, deletePosition, saveCashPosition, getCashPosition } from '../db/setup';
 import axios from 'axios';
+import { PortfolioSummary } from './PortfolioSummary';
+import { PortfolioTable } from './PortfolioTable';
 
 interface PortfolioPosition {
     id: number;
@@ -49,67 +36,6 @@ interface EditingPosition {
     shares: string;
     buy_price: string;
 }
-
-const PortfolioSummary = ({ positions, cashValue, onCashValueChange, onSaveCash }: {
-    positions: PortfolioPosition[],
-    cashValue: number,
-    onCashValueChange: (value: number) => void,
-    onSaveCash: () => void
-}) => {
-    const totalCost = positions.reduce((sum, pos) => sum + (pos.buy_price * pos.shares), 0);
-    const stockValue = positions.reduce((sum, pos) => {
-        if (pos.market_value === null || pos.market_value === undefined) return sum;
-        return sum + (pos.market_value * pos.shares);
-    }, 0);
-    const totalValue = stockValue + cashValue;
-    const profitLoss = stockValue - totalCost;
-    const profitLossPercentage = (profitLoss / totalCost) * 100;
-
-    return (
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%" mb={4}>
-            <Stat>
-                <StatLabel>Total Portfolio Value</StatLabel>
-                <StatNumber>€{totalValue.toFixed(2)}</StatNumber>
-                <FormControl mt={2}>
-                    <FormLabel fontSize="sm">Cash Position</FormLabel>
-                    <HStack>
-                        <NumberInput
-                            value={cashValue}
-                            onChange={(value) => onCashValueChange(Number(value))}
-                            min={0}
-                            precision={2}
-                            size="sm"
-                            flex="1"
-                        >
-                            <NumberInputField />
-                            <NumberInputStepper>
-                                <NumberIncrementStepper />
-                                <NumberDecrementStepper />
-                            </NumberInputStepper>
-                        </NumberInput>
-                        <IconButton
-                            aria-label="Save cash position"
-                            icon={<CheckIcon />}
-                            colorScheme="green"
-                            size="sm"
-                            onClick={onSaveCash}
-                        />
-                    </HStack>
-                </FormControl>
-            </Stat>
-            <Stat>
-                <StatLabel>Profit/Loss</StatLabel>
-                <StatNumber color={profitLoss >= 0 ? 'green.500' : 'red.500'}>
-                    €{profitLoss.toFixed(2)}
-                </StatNumber>
-                <StatHelpText>
-                    <StatArrow type={profitLoss >= 0 ? 'increase' : 'decrease'} />
-                    {profitLossPercentage.toFixed(2)}%
-                </StatHelpText>
-            </Stat>
-        </SimpleGrid>
-    );
-};
 
 const Portfolio = () => {
     const [positions, setPositions] = useState<PortfolioPosition[]>([]);
@@ -129,21 +55,7 @@ const Portfolio = () => {
         return sum + (pos.market_value * pos.shares);
     }, 0) + cashValue;
 
-    // Calculate position percentage
-    const getPositionPercentage = (position: PortfolioPosition) => {
-        if (position.market_value === null || position.market_value === undefined || totalPortfolioValue === 0) return 0;
-        return ((position.market_value * position.shares) / totalPortfolioValue) * 100;
-    };
 
-    // Calculate position return
-    const getPositionReturn = (position: PortfolioPosition) => {
-        if (position.market_value === null || position.market_value === undefined) return { absolute: 0, percentage: 0 };
-        const costBasis = position.shares * position.buy_price;
-        const marketValue = position.market_value * position.shares;
-        const absoluteReturn = marketValue - costBasis;
-        const percentageReturn = (absoluteReturn / costBasis) * 100;
-        return { absolute: absoluteReturn, percentage: percentageReturn };
-    };
 
     const loadCashPosition = async () => {
         try {
@@ -411,149 +323,16 @@ const Portfolio = () => {
                     </VStack>
                 </Box>
 
-                <Box overflowX="auto" width="100%">
-                    <Table variant="simple" size={useBreakpointValue({ base: "sm", md: "md" })}>
-                        <Thead>
-                            <Tr>
-                                <Th>Ticker</Th>
-                                <Th>Shares</Th>
-                                <Th>Avg Price</Th>
-                                <Th>Currency</Th>
-                                <Th>Market Value</Th>
-                                <Th>% of Portfolio</Th>
-                                <Th>Total Return</Th>
-                                <Th>Actions</Th>
-                            </Tr>
-                        </Thead>
-                        <Tbody>
-                            {positions.map((position) => (
-                                <Tr key={position.id}>
-                                    <Td>
-                                        {editingPosition?.id === position.id ? (
-                                            <Input
-                                                value={editingPosition.ticker}
-                                                onChange={(e) => setEditingPosition({
-                                                    ...editingPosition,
-                                                    ticker: e.target.value
-                                                })}
-                                                size="sm"
-                                            />
-                                        ) : (
-                                            position.ticker
-                                        )}
-                                    </Td>
-                                    <Td>
-                                        {editingPosition?.id === position.id ? (
-                                            <NumberInput
-                                                value={editingPosition.shares}
-                                                onChange={(value) => setEditingPosition({
-                                                    ...editingPosition,
-                                                    shares: value
-                                                })}
-                                                min={1}
-                                                size="sm"
-                                            >
-                                                <NumberInputField />
-                                                <NumberInputStepper>
-                                                    <NumberIncrementStepper />
-                                                    <NumberDecrementStepper />
-                                                </NumberInputStepper>
-                                            </NumberInput>
-                                        ) : (
-                                            position.shares
-                                        )}
-                                    </Td>
-                                    <Td>
-                                        {editingPosition?.id === position.id ? (
-                                            <NumberInput
-                                                value={editingPosition.buy_price}
-                                                onChange={(value) => setEditingPosition({
-                                                    ...editingPosition,
-                                                    buy_price: value
-                                                })}
-                                                min={0}
-                                                precision={2}
-                                                size="sm"
-                                            >
-                                                <NumberInputField />
-                                                <NumberInputStepper>
-                                                    <NumberIncrementStepper />
-                                                    <NumberDecrementStepper />
-                                                </NumberInputStepper>
-                                            </NumberInput>
-                                        ) : (
-                                            position.buy_price
-                                        )}
-                                    </Td>
-                                    <Td>{position.currency}</Td>
-                                    <Td>
-                                        {position.market_value !== undefined && position.market_value !== null
-                                            ? `€${(position.market_value * position.shares).toFixed(2)}`
-                                            : 'Loading...'}
-                                    </Td>
-                                    <Td>
-                                        {position.market_value !== undefined && position.market_value !== null
-                                            ? `${getPositionPercentage(position).toFixed(2)}%`
-                                            : 'Loading...'}
-                                    </Td>
-                                    <Td>
-                                        {position.market_value !== undefined && position.market_value !== null ? (
-                                            <Box>
-                                                <Box color={getPositionReturn(position).absolute >= 0 ? 'green.500' : 'red.500'}>
-                                                    €{getPositionReturn(position).absolute.toFixed(2)}
-                                                </Box>
-                                                <Box fontSize="sm" color={getPositionReturn(position).percentage >= 0 ? 'green.500' : 'red.500'}>
-                                                    {getPositionReturn(position).percentage.toFixed(2)}%
-                                                </Box>
-                                            </Box>
-                                        ) : (
-                                            'Loading...'
-                                        )}
-                                    </Td>
-                                    <Td>
-                                        <HStack spacing={2}>
-                                            {editingPosition?.id === position.id ? (
-                                                <>
-                                                    <IconButton
-                                                        aria-label="Save changes"
-                                                        icon={<CheckIcon />}
-                                                        colorScheme="green"
-                                                        size="sm"
-                                                        onClick={handleSave}
-                                                    />
-                                                    <IconButton
-                                                        aria-label="Cancel editing"
-                                                        icon={<CloseIcon />}
-                                                        colorScheme="gray"
-                                                        size="sm"
-                                                        onClick={handleCancel}
-                                                    />
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <IconButton
-                                                        aria-label="Edit position"
-                                                        icon={<EditIcon />}
-                                                        colorScheme="blue"
-                                                        size="sm"
-                                                        onClick={() => handleEdit(position)}
-                                                    />
-                                                    <IconButton
-                                                        aria-label="Delete position"
-                                                        icon={<DeleteIcon />}
-                                                        colorScheme="red"
-                                                        size="sm"
-                                                        onClick={() => handleDelete(position.id)}
-                                                    />
-                                                </>
-                                            )}
-                                        </HStack>
-                                    </Td>
-                                </Tr>
-                            ))}
-                        </Tbody>
-                    </Table>
-                </Box>
+                <PortfolioTable
+                    positions={positions}
+                    editingPosition={editingPosition}
+                    totalPortfolioValue={totalPortfolioValue}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onSave={handleSave}
+                    onCancel={handleCancel}
+                    onEditingPositionChange={setEditingPosition}
+                />
             </VStack>
         </Box>
     );
