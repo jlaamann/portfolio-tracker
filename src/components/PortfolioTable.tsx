@@ -34,6 +34,8 @@ interface PortfolioPosition {
 interface PositionReturn {
     absolute: number;
     percentage: number;
+    costBasisInEUR: number;
+    marketValue: number;
 }
 
 interface EditingPosition {
@@ -78,20 +80,30 @@ export const PortfolioTable = ({
     };
 
     const getPositionReturn = (position: PortfolioPosition) => {
-        if (position.market_value === null || position.market_value === undefined) return { absolute: 0, percentage: 0 };
+        if (position.market_value === null || position.market_value === undefined) return { absolute: 0, percentage: 0, costBasisInEUR: 0, marketValue: 0 };
 
+        // Calculate cost basis in original currency
         const costBasis = position.shares * position.buy_price;
+
+        // Calculate market value in EUR
         let marketValue = position.market_value * position.shares;
 
-        // Convert market value to the same currency as buy price if needed
+        // Convert cost basis to EUR for comparison
+        let costBasisInEUR = costBasis;
         if (position.currency !== 'EUR') {
             const exchangeRate = exchangeRates[position.currency] || 1;
-            marketValue = marketValue * exchangeRate;
+            costBasisInEUR = costBasis * exchangeRate;
         }
 
-        const absoluteReturn = marketValue - costBasis;
-        const percentageReturn = (absoluteReturn / costBasis) * 100;
-        return { absolute: absoluteReturn, percentage: percentageReturn };
+        const absoluteReturn = marketValue - costBasisInEUR;
+        const percentageReturn = (absoluteReturn / costBasisInEUR) * 100;
+
+        return {
+            absolute: absoluteReturn,
+            percentage: percentageReturn,
+            costBasisInEUR,
+            marketValue
+        };
     };
 
     useEffect(() => {
@@ -210,7 +222,7 @@ export const PortfolioTable = ({
                                 {position.market_value !== undefined && position.market_value !== null ? (
                                     <Box>
                                         <Box color={positionReturns[position.id]?.absolute >= 0 ? 'green.500' : 'red.500'}>
-                                            {getPriceString(positionReturns[position.id]?.absolute || 0, position.currency)}
+                                            {getPriceString(positionReturns[position.id]?.absolute || 0, 'EUR')}
                                         </Box>
                                         <Box fontSize="sm" color={positionReturns[position.id]?.percentage >= 0 ? 'green.500' : 'red.500'}>
                                             {positionReturns[position.id]?.percentage.toFixed(2) || '0.00'}%
