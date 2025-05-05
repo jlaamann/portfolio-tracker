@@ -13,6 +13,13 @@ import {
     Td,
     useToast,
     useBreakpointValue,
+    SimpleGrid,
+    Stat,
+    StatLabel,
+    StatNumber,
+    StatHelpText,
+    StatArrow,
+    useColorModeValue,
 } from '@chakra-ui/react'
 import axios from 'axios'
 
@@ -20,6 +27,28 @@ interface StockData {
     symbol: string
     price: string
     currency: string
+    marketCap: number
+    enterpriseValue: number
+    peRatio: number
+    forwardPE: number
+    pegRatio: number
+    priceToSales: number
+    priceToBook: number
+    evToRevenue: number
+    evToEbitda: number
+    profitMargin: number
+    revenue: number
+    revenueGrowth: number
+    operatingMargin: number
+    ebitda: number
+    ebitdaMargin: number
+    netIncome: number
+    eps: number
+    dividendYield: number
+    payoutRatio: number
+    beta: number
+    sector: string
+    industry: string
 }
 
 const StockTicker = () => {
@@ -28,10 +57,27 @@ const StockTicker = () => {
     const [loading, setLoading] = useState(false)
     const toast = useToast()
     const tableSize = useBreakpointValue({ base: "sm", md: "md" })
+    const textColor = useColorModeValue('gray.800', 'white')
 
-    const getPriceString = (price: string, currency: string) => {
-        const numericPrice = parseFloat(price);
-        return numericPrice.toLocaleString('en-US', { style: 'currency', currency: currency ?? "EUR" });
+    const getPriceString = (price: number | string, currency: string) => {
+        const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+        return numericPrice.toLocaleString('en-US', {
+            style: 'currency',
+            currency: currency ?? "USD",
+            maximumFractionDigits: 2
+        });
+    }
+
+    const getLargeNumberString = (value: number) => {
+        if (value >= 1e12) return `${(value / 1e12).toFixed(2)}T`;
+        if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
+        if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
+        if (value >= 1e3) return `${(value / 1e3).toFixed(2)}K`;
+        return value.toFixed(2);
+    }
+
+    const getPercentageString = (value: number) => {
+        return `${(value * 100).toFixed(2)}%`;
     }
 
     const fetchStockData = async () => {
@@ -50,17 +96,40 @@ const StockTicker = () => {
                 `http://localhost:3001/api/stock/${ticker}`
             )
 
-            if (!response.data.chart.result || response.data.chart.result.length === 0) {
+            const quote = response.data.quote['Global Quote'];
+            const overview = response.data.overview;
+            const income = response.data.income.annualReports[0];
+
+            if (!quote || !overview) {
                 throw new Error('No data found for this ticker')
             }
 
-            const quote = response.data.chart.result[0].meta
-            const regularMarketPrice = quote.regularMarketPrice
-
             setStockData({
                 symbol: ticker,
-                price: regularMarketPrice.toFixed(2),
-                currency: quote.currency
+                price: quote['05. price'],
+                currency: 'USD',
+                marketCap: parseFloat(overview.MarketCapitalization),
+                enterpriseValue: parseFloat(overview.MarketCapitalization) + parseFloat(overview.TotalDebt) - parseFloat(overview.CashAndCashEquivalents),
+                peRatio: parseFloat(overview.PERatio),
+                forwardPE: parseFloat(overview.ForwardPE),
+                pegRatio: parseFloat(overview.PEGRatio),
+                priceToSales: parseFloat(overview.PriceToSalesRatioTTM),
+                priceToBook: parseFloat(overview.PriceToBookRatio),
+                evToRevenue: parseFloat(overview.EVToRevenue),
+                evToEbitda: parseFloat(overview.EVToEBITDA),
+                profitMargin: parseFloat(overview.ProfitMargin),
+                revenue: parseFloat(income.totalRevenue),
+                revenueGrowth: parseFloat(overview.RevenueGrowthTTM),
+                operatingMargin: parseFloat(overview.OperatingMarginTTM),
+                ebitda: parseFloat(income.ebitda),
+                ebitdaMargin: parseFloat(overview.EBITDA),
+                netIncome: parseFloat(income.netIncome),
+                eps: parseFloat(overview.EPS),
+                dividendYield: parseFloat(overview.DividendYield),
+                payoutRatio: parseFloat(overview.PayoutRatio),
+                beta: parseFloat(overview.Beta),
+                sector: overview.Sector,
+                industry: overview.Industry,
             })
         } catch (error) {
             toast({
@@ -99,21 +168,114 @@ const StockTicker = () => {
                 </Box>
 
                 {stockData && (
-                    <Box overflowX="auto" width="100%">
-                        <Table variant="simple" size={tableSize}>
-                            <Thead>
-                                <Tr>
-                                    <Th>Metric</Th>
-                                    <Th>Value</Th>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                <Tr>
-                                    <Td>Current Price</Td>
-                                    <Td>{getPriceString(stockData.price, stockData.currency)}</Td>
-                                </Tr>
-                            </Tbody>
-                        </Table>
+                    <Box>
+                        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4} mb={8}>
+                            <Stat>
+                                <StatLabel>Current Price</StatLabel>
+                                <StatNumber>{getPriceString(stockData.price, stockData.currency)}</StatNumber>
+                            </Stat>
+                            <Stat>
+                                <StatLabel>Market Cap</StatLabel>
+                                <StatNumber>{getPriceString(stockData.marketCap, stockData.currency)}</StatNumber>
+                            </Stat>
+                            <Stat>
+                                <StatLabel>Enterprise Value</StatLabel>
+                                <StatNumber>{getPriceString(stockData.enterpriseValue, stockData.currency)}</StatNumber>
+                            </Stat>
+                            <Stat>
+                                <StatLabel>Revenue</StatLabel>
+                                <StatNumber>{getPriceString(stockData.revenue, stockData.currency)}</StatNumber>
+                                {stockData.revenueGrowth && (
+                                    <StatHelpText>
+                                        <StatArrow type={stockData.revenueGrowth >= 0 ? 'increase' : 'decrease'} />
+                                        {getPercentageString(stockData.revenueGrowth)}
+                                    </StatHelpText>
+                                )}
+                            </Stat>
+                            <Stat>
+                                <StatLabel>EBITDA</StatLabel>
+                                <StatNumber>{getPriceString(stockData.ebitda, stockData.currency)}</StatNumber>
+                                <StatHelpText>
+                                    Margin: {getPercentageString(stockData.ebitdaMargin)}
+                                </StatHelpText>
+                            </Stat>
+                            <Stat>
+                                <StatLabel>Net Income</StatLabel>
+                                <StatNumber>{getPriceString(stockData.netIncome, stockData.currency)}</StatNumber>
+                                <StatHelpText>
+                                    Margin: {getPercentageString(stockData.profitMargin)}
+                                </StatHelpText>
+                            </Stat>
+                        </SimpleGrid>
+
+                        <Box overflowX="auto" width="100%">
+                            <Table variant="simple" size={tableSize}>
+                                <Thead>
+                                    <Tr>
+                                        <Th>Metric</Th>
+                                        <Th>Value</Th>
+                                    </Tr>
+                                </Thead>
+                                <Tbody>
+                                    <Tr>
+                                        <Td>P/E Ratio</Td>
+                                        <Td>{stockData.peRatio?.toFixed(2) ?? 'N/A'}</Td>
+                                    </Tr>
+                                    <Tr>
+                                        <Td>Forward P/E</Td>
+                                        <Td>{stockData.forwardPE?.toFixed(2) ?? 'N/A'}</Td>
+                                    </Tr>
+                                    <Tr>
+                                        <Td>PEG Ratio</Td>
+                                        <Td>{stockData.pegRatio?.toFixed(2) ?? 'N/A'}</Td>
+                                    </Tr>
+                                    <Tr>
+                                        <Td>Price/Sales</Td>
+                                        <Td>{stockData.priceToSales?.toFixed(2) ?? 'N/A'}</Td>
+                                    </Tr>
+                                    <Tr>
+                                        <Td>Price/Book</Td>
+                                        <Td>{stockData.priceToBook?.toFixed(2) ?? 'N/A'}</Td>
+                                    </Tr>
+                                    <Tr>
+                                        <Td>EV/Revenue</Td>
+                                        <Td>{stockData.evToRevenue?.toFixed(2) ?? 'N/A'}</Td>
+                                    </Tr>
+                                    <Tr>
+                                        <Td>EV/EBITDA</Td>
+                                        <Td>{stockData.evToEbitda?.toFixed(2) ?? 'N/A'}</Td>
+                                    </Tr>
+                                    <Tr>
+                                        <Td>Operating Margin</Td>
+                                        <Td>{getPercentageString(stockData.operatingMargin)}</Td>
+                                    </Tr>
+                                    <Tr>
+                                        <Td>EPS</Td>
+                                        <Td>{getPriceString(stockData.eps, stockData.currency)}</Td>
+                                    </Tr>
+                                    <Tr>
+                                        <Td>Dividend Yield</Td>
+                                        <Td>{getPercentageString(stockData.dividendYield)}</Td>
+                                    </Tr>
+                                    <Tr>
+                                        <Td>Payout Ratio</Td>
+                                        <Td>{getPercentageString(stockData.payoutRatio)}</Td>
+                                    </Tr>
+                                    <Tr>
+                                        <Td>Beta</Td>
+                                        <Td>{stockData.beta?.toFixed(2) ?? 'N/A'}</Td>
+                                    </Tr>
+                                    <Tr>
+                                        <Td>Sector</Td>
+                                        <Td>{stockData.sector}</Td>
+                                    </Tr>
+                                    <Tr>
+                                        <Td>Industry</Td>
+                                        <Td>{stockData.industry}</Td>
+                                    </Tr>
+                                </Tbody>
+                            </Table>
+                        </Box>
                     </Box>
                 )}
             </VStack>

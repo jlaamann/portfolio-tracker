@@ -1,6 +1,9 @@
 import express from 'express';
 import axios from 'axios';
 import cors from 'cors';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 const port = 3001;
@@ -12,11 +15,28 @@ app.use(express.json());
 app.get('/api/stock/:ticker', async (req, res) => {
     try {
         const { ticker } = req.params;
-        const response = await axios.get(
-            `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`
-        );
-        res.json(response.data);
+        const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
+
+        if (!apiKey) {
+            throw new Error('Alpha Vantage API key not configured');
+        }
+
+        const [quoteResponse, overviewResponse, incomeResponse] = await Promise.all([
+            // Get current quote
+            axios.get(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${apiKey}`),
+            // Get company overview
+            axios.get(`https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${apiKey}`),
+            // Get income statement
+            axios.get(`https://www.alphavantage.co/query?function=INCOME_STATEMENT&symbol=${ticker}&apikey=${apiKey}`)
+        ]);
+
+        res.json({
+            quote: quoteResponse.data,
+            overview: overviewResponse.data,
+            income: incomeResponse.data
+        });
     } catch (error) {
+        console.error('Stock data error:', error.message);
         res.status(500).json({ error: error.message });
     }
 });
