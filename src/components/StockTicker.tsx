@@ -19,7 +19,6 @@ import {
     StatNumber,
     StatHelpText,
     StatArrow,
-    useColorModeValue,
 } from '@chakra-ui/react'
 import axios from 'axios'
 
@@ -57,7 +56,6 @@ const StockTicker = () => {
     const [loading, setLoading] = useState(false)
     const toast = useToast()
     const tableSize = useBreakpointValue({ base: "sm", md: "md" })
-    const textColor = useColorModeValue('gray.800', 'white')
 
     const getPriceString = (price: number | string, currency: string) => {
         const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
@@ -109,6 +107,7 @@ const StockTicker = () => {
             const quote = response.data.quote['Global Quote'];
             const overview = response.data.overview;
             const income = response.data.income.annualReports[0];
+            const incomePreviousYear = response.data.income.annualReports.length > 1 ? response.data.income.annualReports[1] : null;
 
             if (!quote || !overview) {
                 throw new Error('No data found for this ticker')
@@ -129,10 +128,10 @@ const StockTicker = () => {
                 evToEbitda: parseFloat(overview.EVToEBITDA),
                 profitMargin: parseFloat(overview.ProfitMargin),
                 revenue: parseFloat(income.totalRevenue),
-                revenueGrowth: parseFloat(overview.RevenueGrowthTTM),
+                revenueGrowth: incomePreviousYear ? ((parseFloat(income.totalRevenue) - parseFloat(incomePreviousYear.totalRevenue)) / parseFloat(incomePreviousYear.totalRevenue)) : 0,
                 operatingMargin: parseFloat(overview.OperatingMarginTTM),
                 ebitda: parseFloat(income.ebitda),
-                ebitdaMargin: parseFloat(overview.EBITDA),
+                ebitdaMargin: parseFloat(income.ebitda) / parseFloat(income.totalRevenue),
                 netIncome: parseFloat(income.netIncome),
                 eps: parseFloat(overview.EPS),
                 dividendYield: parseFloat(overview.DividendYield),
