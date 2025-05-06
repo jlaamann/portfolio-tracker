@@ -104,6 +104,17 @@ export const PortfolioTable = ({
         };
     };
 
+    const getCurrentPrice = (position: PortfolioPosition) => {
+        if (position.market_value === null || position.market_value === undefined) return null;
+
+        let currentPrice = position.market_value;
+        if (position.currency !== 'EUR') {
+            const exchangeRate = exchangeRates[position.currency] || 1;
+            currentPrice = position.market_value / exchangeRate;
+        }
+        return currentPrice;
+    };
+
     useEffect(() => {
         const newReturns: Record<number, PositionReturn> = {};
         for (const position of positions) {
@@ -167,6 +178,7 @@ export const PortfolioTable = ({
                         <Th>Ticker</Th>
                         <Th>Shares</Th>
                         <Th>Avg Price</Th>
+                        <Th>Current Price</Th>
                         <Th>Currency</Th>
                         <Th>Market Value</Th>
                         <Th>% of Portfolio</Th>
@@ -233,6 +245,11 @@ export const PortfolioTable = ({
                                 ) : (
                                     position.buy_price
                                 )}
+                            </Td>
+                            <Td>
+                                {position.market_value !== undefined && position.market_value !== null
+                                    ? getPriceString(getCurrentPrice(position) || 0, position.currency)
+                                    : 'Loading...'}
                             </Td>
                             <Td>{position.currency}</Td>
                             <Td>
