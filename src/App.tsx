@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar'
 import StockTicker from './components/StockTicker'
 import HistoricalTicker from './components/HistoricalTicker'
 import Portfolio from './components/Portfolio'
+import Watchlist from './components/Watchlist'
 import theme from './theme'
 
 const AppContent = () => {
@@ -34,6 +35,7 @@ const AppContent = () => {
           <Route path="/" element={<StockTicker />} />
           <Route path="/historical" element={<HistoricalTicker />} />
           <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/watchlist" element={<Watchlist />} />
         </Routes>
       </Box>
     </Box>

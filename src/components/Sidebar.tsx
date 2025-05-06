@@ -54,6 +54,20 @@ const Sidebar = () => {
             >
                 Portfolio
             </Button>
+            <Button
+                as={Link}
+                to="/watchlist"
+                colorScheme={location.pathname === '/watchlist' ? 'blue' : 'gray'}
+                variant={location.pathname === '/watchlist' ? 'solid' : 'ghost'}
+                justifyContent="flex-start"
+                onClick={isMobile ? onClose : undefined}
+                _hover={{
+                    bg: location.pathname === '/watchlist' ? 'blue.400' : undefined,
+                    color: location.pathname === '/watchlist' ? 'white' : undefined
+                }}
+            >
+                Watchlist
+            </Button>
             <Divider my={2} />
             <Button
                 leftIcon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
