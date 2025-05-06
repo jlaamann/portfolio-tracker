@@ -23,6 +23,17 @@ interface PortfolioDB extends DBSchema {
             updated_at: Date;
         };
     };
+    watchlist: {
+        key: number;
+        value: {
+            id: number;
+            ticker: string;
+            created_at: Date;
+        };
+        indexes: {
+            'by-ticker': string;
+        };
+    };
 }
 
 let db: IDBPDatabase<PortfolioDB> | null = null;
@@ -31,7 +42,7 @@ export const initDB = async () => {
     if (db) return db;
 
     try {
-        db = await openDB<PortfolioDB>('portfolio-db', 10, {
+        db = await openDB<PortfolioDB>('portfolio-db', 11, {
             upgrade(db, oldVersion, newVersion) {
                 console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
 
@@ -49,6 +60,15 @@ export const initDB = async () => {
                     db.createObjectStore('cash', {
                         keyPath: 'key',
                     });
+                }
+
+                // Create watchlist store if it doesn't exist
+                if (!db.objectStoreNames.contains('watchlist')) {
+                    const store = db.createObjectStore('watchlist', {
+                        keyPath: 'id',
+                        autoIncrement: true,
+                    });
+                    store.createIndex('by-ticker', 'ticker');
                 }
             },
             blocked() {
@@ -167,4 +187,30 @@ export const getCashPosition = async () => {
     const db = await getDB();
     const cashData = await db.get('cash', 'current');
     return cashData?.amount || 0;
+};
+
+type WatchlistEntry = Omit<PortfolioDB['watchlist']['value'], 'id'>;
+
+export const addToWatchlist = async (ticker: string) => {
+    const db = await getDB();
+    const existingEntry = await db.getFromIndex('watchlist', 'by-ticker', ticker);
+
+    if (existingEntry) {
+        throw new Error('Ticker already in watchlist');
+    }
+
+    return db.add('watchlist', {
+        ticker: ticker.toUpperCase(),
+        created_at: new Date(),
+    } as WatchlistEntry);
+};
+
+export const removeFromWatchlist = async (id: number) => {
+    const db = await getDB();
+    return db.delete('watchlist', id);
+};
+
+export const getWatchlist = async () => {
+    const db = await getDB();
+    return db.getAll('watchlist');
 }; 
