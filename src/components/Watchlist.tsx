@@ -14,9 +14,11 @@ import {
     IconButton,
     useToast,
     HStack,
+    Text,
 } from '@chakra-ui/react';
 import { DeleteIcon } from '@chakra-ui/icons';
 import { addToWatchlist, getWatchlist, removeFromWatchlist } from '../db/setup';
+import axios from 'axios';
 
 interface WatchlistEntry {
     id: number;
@@ -24,9 +26,16 @@ interface WatchlistEntry {
     created_at: Date;
 }
 
+interface StockPrice {
+    price: number;
+    currency: string;
+}
+
 const Watchlist = () => {
     const [ticker, setTicker] = useState('');
     const [entries, setEntries] = useState<WatchlistEntry[]>([]);
+    const [prices, setPrices] = useState<Record<string, StockPrice>>({});
+    const [isLoading, setIsLoading] = useState(false);
     const toast = useToast();
 
     const loadWatchlist = async () => {
@@ -42,9 +51,50 @@ const Watchlist = () => {
         }
     };
 
+    const fetchPrices = async () => {
+        setIsLoading(true);
+        const newPrices: Record<string, StockPrice> = {};
+
+        try {
+            await Promise.all(
+                entries.map(async (entry) => {
+                    try {
+                        const response = await axios.get(
+                            `http://localhost:3001/api/stock/${entry.ticker}`
+                        );
+
+                        if (!response.data.chart.result || response.data.chart.result.length === 0) {
+                            return;
+                        }
+
+                        const quote = response.data.chart.result[0].meta;
+                        newPrices[entry.ticker] = {
+                            price: quote.regularMarketPrice,
+                            currency: quote.currency,
+                        };
+                    } catch (error) {
+                        console.error(`Error fetching price for ${entry.ticker}:`, error);
+                    }
+                })
+            );
+
+            setPrices(newPrices);
+        } catch (error) {
+            console.error('Error fetching prices:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
         loadWatchlist();
     }, []);
+
+    useEffect(() => {
+        if (entries.length > 0) {
+            fetchPrices();
+        }
+    }, [entries]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -90,6 +140,15 @@ const Watchlist = () => {
         return new Date(date).toLocaleDateString();
     };
 
+    const formatPrice = (price: number, currency: string) => {
+        return price.toLocaleString('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    };
+
     return (
         <Box p={{ base: 2, md: 5 }}>
             <VStack spacing={8} align="stretch">
@@ -112,6 +171,7 @@ const Watchlist = () => {
                     <Thead>
                         <Tr>
                             <Th>Ticker</Th>
+                            <Th>Current Price</Th>
                             <Th>Date Added</Th>
                             <Th>Actions</Th>
                         </Tr>
@@ -120,6 +180,15 @@ const Watchlist = () => {
                         {entries.map((entry) => (
                             <Tr key={entry.id}>
                                 <Td>{entry.ticker}</Td>
+                                <Td>
+                                    {isLoading ? (
+                                        <Text>Loading...</Text>
+                                    ) : prices[entry.ticker] ? (
+                                        formatPrice(prices[entry.ticker].price, prices[entry.ticker].currency)
+                                    ) : (
+                                        <Text color="red.500">Price unavailable</Text>
+                                    )}
+                                </Td>
                                 <Td>{formatDate(entry.created_at)}</Td>
                                 <Td>
                                     <IconButton
